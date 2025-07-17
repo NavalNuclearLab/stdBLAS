@@ -15,6 +15,9 @@
 // ************************************************************************
 //@HEADER
 
+#include <ranges>
+#include <execution>
+
 #ifndef LINALG_INCLUDE_EXPERIMENTAL___P1673_BITS_BLAS1_SCALE_HPP_
 #define LINALG_INCLUDE_EXPERIMENTAL___P1673_BITS_BLAS1_SCALE_HPP_
 
@@ -34,10 +37,19 @@ template<class ElementType,
 void linalg_scale_rank_1(
   const Scalar alpha,
   mdspan<ElementType, extents<SizeType, ext0>, Layout, Accessor> x)
-{
+
+/*{
   for (SizeType i = 0; i < x.extent(0); ++i) {
     x(i) *= alpha;
   }
+  */
+{
+  using size_type = std::common_type_t<SizeType>;
+  size_type n = x.extent(0);
+  auto rows = std::ranges::iota_view{size_type(0), n};
+  std::for_each(rows.begin(), rows.end(), [=](size_type i) {
+    x(i) *= alpha;
+  });
 }
 
 template<class ElementType,
@@ -49,13 +61,24 @@ template<class ElementType,
          class Scalar>
 void linalg_scale_rank_2(
   const Scalar alpha,
-  mdspan<ElementType, extents<SizeType, numRows, numCols>, Layout, Accessor> A)
+  mdspan<ElementType, extents<SizeType, numRows, numCols>, Layout, Accessor> x)
 {
+  /*
   for (SizeType j = 0; j < A.extent(1); ++j) {
     for (SizeType i = 0; i < A.extent(0); ++i) {
       A(i,j) *= alpha;
     }
   }
+  */
+
+  using size_type = std::common_type_t<SizeType>;
+  auto rows = std::ranges::iota_view{size_type(0), x.extent(0)};
+  auto cols = std::ranges::iota_view{size_type(0), x.extent(1)};
+  auto pairs = std::ranges::cartesian_product_view(rows, cols);
+  std::for_each(pairs.begin(), pairs.end(), [=](auto pair){
+    auto [r, c] = pair;
+    x(r, c) *= alpha;
+  } );
 }
 
 template <typename Exec, typename Scalar, typename x_t, typename = void>

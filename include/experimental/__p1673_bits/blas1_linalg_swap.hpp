@@ -15,6 +15,9 @@
 // ************************************************************************
 //@HEADER
 
+#include <ranges>
+#include <execution>
+
 #ifndef LINALG_INCLUDE_EXPERIMENTAL___P1673_BITS_BLAS1_LINALG_SWAP_HPP_
 #define LINALG_INCLUDE_EXPERIMENTAL___P1673_BITS_BLAS1_LINALG_SWAP_HPP_
 
@@ -47,10 +50,12 @@ void swap_rank_1(
 
   using std::swap;
   using size_type = std::common_type_t<SizeType_x, SizeType_y>;
-
-  for (size_type i = 0; i < y.extent(0); ++i) {
+  
+  size_type n = y.extent(0);
+  auto rows = std::ranges::iota_view{size_type(0), n};
+  std::for_each(rows.begin(), rows.end(), [=](size_type i) {
     swap(x(i), y(i));
-  }
+  });
 }
 
 template<class ElementType_x,
@@ -79,11 +84,13 @@ void swap_rank_2(
   using std::swap;
   using size_type = ::std::common_type_t<SizeType_x, SizeType_y>;
 
-  for (size_type j = 0; j < y.extent(1); ++j) {
-    for (size_type i = 0; i < y.extent(0); ++i) {
-      swap(x(i,j), y(i,j));
-    }
-  }
+  auto rows = std::ranges::iota_view{size_type(0), x.extent(0)};
+  auto cols = std::ranges::iota_view{size_type(0), x.extent(1)};
+  auto pairs = std::ranges::cartesian_product_view(rows, cols);
+  std::for_each(pairs.begin(), pairs.end(), [=](auto pair){
+    auto [r, c] = pair;
+    swap(x(r,c), y(r,c));
+  } );
 }
 
 template <class Exec, class x_t, class y_t, class = void>

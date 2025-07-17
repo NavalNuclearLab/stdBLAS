@@ -15,6 +15,9 @@
 // ************************************************************************
 //@HEADER
 
+#include <ranges>
+#include <execution>
+
 #ifndef LINALG_INCLUDE_EXPERIMENTAL___P1673_BITS_BLAS1_LINALG_COPY_HPP_
 #define LINALG_INCLUDE_EXPERIMENTAL___P1673_BITS_BLAS1_LINALG_COPY_HPP_
 
@@ -43,9 +46,16 @@ void copy_rank_1(
                 y.static_extent(0) == dynamic_extent ||
                 x.static_extent(0) == y.static_extent(0));
   using size_type = std::common_type_t<SizeType_x, SizeType_y>;
+  /*
   for (size_type i = 0; i < y.extent(0); ++i) {
     y(i) = x(i);
   }
+  */
+  size_type n = y.extent(0);
+  auto rows = std::ranges::iota_view{size_type(0), n};
+  std::for_each(rows.begin(), rows.end(), [=](size_type i) {
+    y(i) = x(i);
+  });
 }
 
 template<class ElementType_x,
@@ -71,11 +81,13 @@ void copy_rank_2(
                 y.static_extent(1) == dynamic_extent ||
                 x.static_extent(1) == y.static_extent(1));
   using size_type = std::common_type_t<SizeType_x, SizeType_y>;
-  for (size_type j = 0; j < y.extent(1); ++j) {
-    for (size_type i = 0; i < y.extent(0); ++i) {
-      y(i,j) = x(i,j);
-    }
-  }
+  auto rows = std::ranges::iota_view{size_type(0), x.extent(0)};
+  auto cols = std::ranges::iota_view{size_type(0), x.extent(1)};
+  auto pairs = std::ranges::cartesian_product_view(rows, cols);
+  std::for_each(pairs.begin(), pairs.end(), [=](auto pair){
+    auto [r, c] = pair;
+    y(r, c) = x(r, c);
+  } );
 }
 
 template <class Exec, class x_t, class y_t, class = void>

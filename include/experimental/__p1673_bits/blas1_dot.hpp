@@ -75,9 +75,23 @@ Scalar dot(
                 v1.static_extent(0) == v2.static_extent(0));
 
   using size_type = std::common_type_t<SizeType1, SizeType2>;
+  /*
   for (size_type k = 0; k < v1.extent(0); ++k) {
     init += v1(k) * v2(k);
-  }
+  */
+
+  size_type n = v1.extent(0);
+  auto rows = std::ranges::iota_view{size_type(0), n};
+
+  init = std::transform_reduce(
+    std::execution::par,           // Parallel execution policy
+    rows.begin(), rows.end(),          // Range of the first vector
+    init,                              // Initial value for accumulation
+    std::plus <> (), [=](auto row){
+      return v1(row) * v2(row);
+    }
+    );
+
   return init;
 }
 

@@ -17,6 +17,8 @@
 
 #ifndef LINALG_INCLUDE_EXPERIMENTAL___P1673_BITS_BLAS1_LINALG_ADD_HPP_
 #define LINALG_INCLUDE_EXPERIMENTAL___P1673_BITS_BLAS1_LINALG_ADD_HPP_
+#include <ranges>
+#include <execution>
 
 namespace MDSPAN_IMPL_STANDARD_NAMESPACE {
 namespace MDSPAN_IMPL_PROPOSED_NAMESPACE {
@@ -56,9 +58,11 @@ void add_rank_1(
                 x.static_extent(0) == y.static_extent(0));
 
   using size_type = std::common_type_t<SizeType_x, SizeType_y, SizeType_z>;
-  for (size_type i = 0; i < z.extent(0); ++i) {
+  size_type n = z.extent(0);
+  auto rows = std::ranges::iota_view{size_type(0), n};
+  std::for_each(rows.begin(), rows.end(), [=](size_type i) {
     z(i) = x(i) + y(i);
-  }
+  });
 }
 
 template<class ElementType_x,
@@ -105,11 +109,13 @@ void add_rank_2(
                 x.static_extent(1) == y.static_extent(1));
 
   using size_type = std::common_type_t<SizeType_x, SizeType_y, SizeType_z>;
-  for (size_type j = 0; j < x.extent(1); ++j) {
-    for (size_type i = 0; i < x.extent(0); ++i) {
-      z(i,j) = x(i,j) + y(i,j);
-    }
-  }
+  auto rows = std::ranges::iota_view{size_type(0), x.extent(0)};
+  auto cols = std::ranges::iota_view{size_type(0), x.extent(1)};
+  auto pairs = std::ranges::cartesian_product_view(rows, cols);
+  std::for_each(pairs.begin(), pairs.end(), [=](auto pair){
+    auto [r, c] = pair;
+    z(r, c) = x(r, c) + y(r, c);
+  } );
 }
 
 template <class Exec, class x_t, class y_t, class z_t, class = void>

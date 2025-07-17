@@ -66,17 +66,41 @@ Scalar vector_abs_sum(
              impl::abs_if_needed(impl::imag_if_needed(std::declval<value_type>())));
   static_assert(std::is_convertible_v<sum_type, Scalar>);
   
-  const SizeType numElt = v.extent(0);
+  /* const SizeType numElt = v.extent(0); */
+  
+  const SizeType n = v.extent(0);
+  auto rows = std::ranges::iota_view{SizeType(0), n};
+
   if constexpr (std::is_arithmetic_v<value_type>) {
+    /*
     for (SizeType i = 0; i < numElt; ++i) {
       init += impl::abs_if_needed(v(i));
-    }
+    */
+
+    init = std::transform_reduce(
+      std::execution::par,           // Parallel execution policy
+      rows.begin(), rows.end(),          // Range of the first vector
+      init,                              // Initial value for accumulation
+      std::plus <> (), [=](auto row){
+        return impl::abs_if_needed(v(row));
+      }
+      );
   }
   else {
+    /*
     for (SizeType i = 0; i < numElt; ++i) {
-      init += impl::abs_if_needed(impl::real_if_needed(v(i)));
-      init += impl::abs_if_needed(impl::imag_if_needed(v(i)));
+      init += impl::abs_if_needed(impl::real_if_needed(v(i))) + impl::abs_if_needed(impl::imag_if_needed(v(i)));
     }
+    */
+
+    init = std::transform_reduce(
+      std::execution::par,           // Parallel execution policy
+      rows.begin(), rows.end(),          // Range of the first vector
+      init,                              // Initial value for accumulation
+      std::plus <> (), [=](auto row){
+        return impl::abs_if_needed(impl::real_if_needed(v(row))) + impl::abs_if_needed(impl::imag_if_needed(v(row)));
+      }
+      );
   }
 
   return init;
