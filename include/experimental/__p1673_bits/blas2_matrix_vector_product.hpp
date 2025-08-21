@@ -269,17 +269,30 @@ void matrix_vector_product(
   mdspan<ElementType_x, extents<SizeType_x, ext_x>, Layout_x, Accessor_x> x,
   mdspan<ElementType_y, extents<SizeType_y, ext_y>, Layout_y, Accessor_y> y)
 {
+
   using size_type = std::common_type_t<
     std::common_type_t<
       std::common_type_t<SizeType_A, SizeType_x>,
       SizeType_y>>;
-  for (size_type i = 0; i < A.extent(0); ++i) {
-    y(i) = ElementType_y{};
-    for (size_type j = 0; j < A.extent(1); ++j) {
-      y(i) += A(i,j) * x(j);
-    }
+
+  size_type nrows = A.extent(0);
+  size_type ncols = A.extent(1);
+  auto cols = std::ranges::iota_view{size_type(0), ncols};
+  for (size_type row = 0; row < nrows; ++row) {
+
+    // dot product of row and vector
+    y(row) = std::transform_reduce(
+      std::execution::par,           // Parallel execution policy
+      cols.begin(), cols.end(),          // Range of the first vector
+      ElementType_y{},                              // Initial value for accumulation
+      std::plus <> (), 
+      [=](auto col){
+        return A(row, col) * x(col);
+      }
+    );
   }
 }
+
 
 MDSPAN_TEMPLATE_REQUIRES(
          class ExecutionPolicy,

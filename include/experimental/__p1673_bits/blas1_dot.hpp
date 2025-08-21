@@ -90,7 +90,7 @@ Scalar dot(
     std::plus <> (), [=](auto row){
       return v1(row) * v2(row);
     }
-    );
+  );
 
   return init;
 }

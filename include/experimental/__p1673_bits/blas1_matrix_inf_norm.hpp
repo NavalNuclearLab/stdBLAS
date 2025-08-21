@@ -79,12 +79,48 @@ Scalar matrix_inf_norm(
     return result;
   }
 
-  for (size_type i = 0; i < A.extent(0); ++i) {
-    auto row_sum = init;
-    for (size_type j = 0; j < A.extent(1); ++j) {
-      row_sum += abs(A(i,j));
+  /*
+    if the number of rows is greater parallelize over rows
+    else parallelize over columns 
+  */
+
+  // if number of rows >=number of columns
+  size_type nrows = A.extent(0);
+  size_type ncols = A.extent(1);
+  if (nrows >= ncols) {
+    auto rows = std::ranges::iota_view{size_type(0), nrows};
+    result = std::transform_reduce(
+      std::execution::par,           // Parallel execution policy
+      rows.begin(), rows.end(),          // Range of the first vector
+      init,                              // Initial value for accumulation
+      [=](auto a, auto b){
+        return max(a, b);
+      },
+      [=](auto row){
+        auto row_sum = init;
+        for (size_type col = 0; col < ncols; ++col) {
+          row_sum += abs(A(row,col));
+        }
+        return row_sum;
+      }
+    );
+  }
+
+  // the number of columns > number of rows
+  else {
+    auto cols = std::ranges::iota_view{size_type(0), ncols};
+    for (size_type row = 0; row < nrows; ++row) {
+      auto row_sum = std::transform_reduce(
+        std::execution::par,           // Parallel execution policy
+        cols.begin(), cols.end(),          // Range of the first vector
+        init,                              // Initial value for accumulation
+        std::plus <> (), 
+        [=](auto col){
+          return abs(A(row,col));
+        }
+      );
+      result = max(row_sum, result);
     }
-    result = max(row_sum, result);
   }
   return result;
 }

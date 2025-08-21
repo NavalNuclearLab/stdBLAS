@@ -20,6 +20,8 @@
 
 #include <cmath>
 #include <complex>
+#include <ranges>
+#include <execution>
 
 namespace MDSPAN_IMPL_STANDARD_NAMESPACE {
 namespace MDSPAN_IMPL_PROPOSED_NAMESPACE {
@@ -371,13 +373,14 @@ void apply_givens_rotation(
                 y.static_extent(0) == dynamic_extent ||
                 x.static_extent(0) == y.static_extent(0));
 
-  using index_type = ::std::common_type_t<SizeType1, SizeType2>;
-  const auto x_extent_0 = static_cast<index_type>(x.extent(0));
-  for (index_type i = 0; i < x_extent_0; ++i) {
+  using index_type = ::std::common_type_t<SizeType1, SizeType2>;  
+  index_type n = x.extent(0);
+  auto rows = std::ranges::iota_view{index_type(0), n};
+  std::for_each(rows.begin(), rows.end(), [=](index_type i) {
     const auto dtemp = c * x(i) + s * y(i);
     y(i) = c * y(i) - s * x(i);
     x(i) = dtemp;
-  }
+  });
 }
 
 MDSPAN_TEMPLATE_REQUIRES(

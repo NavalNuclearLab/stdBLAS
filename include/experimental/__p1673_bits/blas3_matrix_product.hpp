@@ -740,7 +740,7 @@ void matrix_product(
 #endif // 0
   {
     using size_type = ::std::common_type_t<SizeType_A, SizeType_B, SizeType_C>;
-
+    /*
     for (size_type i = 0; i < C.extent(0); ++i) {
       for (size_type j = 0; j < C.extent(1); ++j) {
         C(i,j) = ElementType_C{};
@@ -749,6 +749,34 @@ void matrix_product(
         }
       }
     }
+    */
+
+    size_type nrows_C = C.extent(0);
+    size_type ncols_C = C.extent(1);
+    size_type ncols_A = A.extent(1);
+    auto cols_a = std::ranges::iota_view{size_type(0), ncols_A};
+
+    //for (size_type row_c = 0; row_c < nrows_C; ++row_c) {
+    auto rows_c = std::ranges::iota_view{size_type(0), nrows_C};
+    std::for_each(std::execution::par,rows_c.begin(), rows_c.end(), [=](size_type row_c) {
+   
+      //for (size_type col_c = 0; col_c < ncols_C; ++col_c) {
+      auto cols_c = std::ranges::iota_view{size_type(0), ncols_C};
+      std::for_each(std::execution::par,cols_c.begin(), cols_c.end(), [=](size_type col_c) {
+
+        C(row_c,col_c) = ElementType_C{};
+        // dot product of row and vector
+        C(row_c,col_c) = std::transform_reduce(
+          std::execution::par,           // Parallel execution policy
+          cols_a.begin(), cols_a.end(),          // Range of the first vector
+          ElementType_C{},                              // Initial value for accumulation
+          std::plus <> (), 
+          [=](auto col_a){
+            return A(row_c, col_a) * B(col_a, col_c);
+          }
+        );
+      });
+    });
   }
 }
 

@@ -61,32 +61,40 @@ SizeType vector_idx_abs_max_default_impl(
   }
 
   if constexpr (std::is_arithmetic_v<value_type>) {
-    SizeType maxInd = 0;
-    magnitude_type maxVal = abs(v(0));
-    for (SizeType i = 1; i < v.extent(0); ++i) {
-      if (maxVal < abs(v(i))) {
-        maxVal = abs(v(i));
-        maxInd = i;
+    const SizeType n = v.extent(0);
+    auto indices = std::ranges::iota_view{SizeType(0), n};
+    SizeType maxInd = std::reduce(
+      std::execution::par,           // Parallel execution policy
+      indices.begin(), indices.end(),          // Range of the first vector
+      SizeType (0),                              // Initial value for accumulation
+      [=](SizeType index1, SizeType index2){
+        if (abs(v(index1)) >= abs(v(index2))){
+          return index1;
+        }
+        return index2;
       }
-    }
-
+    );
     return maxInd;
-  }
+  } //   if constexpr (std::is_arithmetic_v<value_type>) {
+
   else {
-    SizeType maxInd = 0;
-    magnitude_type maxVal = impl::abs_if_needed(impl::real_if_needed(v(0))) +
-                            impl::abs_if_needed(impl::imag_if_needed(v(0)));
-
-    for (SizeType i = 1; i < v.extent(0); ++i) {
-      magnitude_type val = impl::abs_if_needed(impl::real_if_needed(v(i))) +
-                           impl::abs_if_needed(impl::imag_if_needed(v(i)));
-
-      if (maxVal < val) {
-        maxVal = val;
-        maxInd = i;
+    const SizeType n = v.extent(0);
+    auto indices = std::ranges::iota_view{SizeType(0), n};
+    SizeType maxInd = std::reduce(
+      std::execution::par,           // Parallel execution policy
+      indices.begin(), indices.end(),          // Range of the first vector
+      SizeType (0),                              // Initial value for accumulation
+      [=](SizeType index1, SizeType index2){
+        magnitude_type val1 = impl::abs_if_needed(impl::real_if_needed(v(index1))) +
+                            impl::abs_if_needed(impl::imag_if_needed(v(index1)));
+        magnitude_type val2 = impl::abs_if_needed(impl::real_if_needed(v(index2))) +
+                            impl::abs_if_needed(impl::imag_if_needed(v(index2)));
+        if (val1 >= val2){
+          return index1;
+        }
+        return index2;
       }
-    }
-
+    );
     return maxInd;
   }
 }

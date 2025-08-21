@@ -59,21 +59,39 @@ void trsv_upper_triangular_left_side(
   // One advantage of using signed index types is that you can write
   // descending loops with zero-based indices.
   // (AMK 6/8/21) i can't be a nonnegative type because the loop would be infinite
-  for (ptrdiff_t i = A_num_rows - 1; i >= 0; --i) {
+
+  //for (ptrdiff_t i = A_num_rows - 1; i >= 0; --i) {
+
+  for (ptrdiff_t row = A_num_rows - 1; row >= 0; --row) {   
     // TODO this would be a great opportunity for an implementer to
     // add value, by accumulating in extended precision (or at least
     // in a type with the max precision of X and B).
-    using sum_type = decltype (B(i) - A(0,0) * X(0));
+    using sum_type = decltype (B(row) - A(0,0) * X(0));
     //using sum_type = typename out_object_t::element_type;
-    sum_type t (B(i));
+    sum_type t (B(row));
+
+    /*
     for (size_type j = i + 1; j < A_num_cols; ++j) {
       t = t - A(i,j) * X(j);
     }
+    */
+
+    auto cols = std::ranges::iota_view{size_type(row + 1), A_num_cols};
+
+    t = std::transform_reduce(
+      std::execution::par,           // Parallel execution policy
+      cols.begin(), cols.end(),          // Range of the first vector
+      sum_type{},                              // Initial value for accumulation
+      std::plus <> (), 
+      [=](auto col){
+        return -A(row, col) * X(col);
+      }
+    );
     if constexpr (explicit_diagonal) {
-      X(i) = divide(t, A(i,i));
+      X(row) = divide(t, A(row, cols.end() - 1));
     }
     else {
-      X(i) = t;
+      X(row) = t;
     }
   }
 }
@@ -131,21 +149,40 @@ void trsv_lower_triangular_left_side(
   const size_type A_num_rows = A.extent(0);
   const size_type A_num_cols = A.extent(1);
 
-  for (size_type i = 0; i < A_num_rows; ++i) {
+  //for (size_type i = 0; i < A_num_rows; ++i) {
+
+  for (size_type row = 0; row < A_num_rows; ++row) {
+
     // TODO this would be a great opportunity for an implementer to
     // add value, by accumulating in extended precision (or at least
     // in a type with the max precision of X and B).
-    using sum_type = decltype (B(i) - A(0,0) * X(0));
+    using sum_type = decltype (B(row) - A(0,0) * X(0));
     //using sum_type = typename out_object_t::element_type;
-    sum_type t (B(i));
+    sum_type t (B(row));
+
+    /*
     for (size_type j = 0; j < i; ++j) {
       t = t - A(i,j) * X(j);
     }
+    */
+
+    auto cols = std::ranges::iota_view{size_type(0), A_num_cols};
+
+    t = std::transform_reduce(
+      std::execution::par,           // Parallel execution policy
+      cols.begin(), cols.end(),          // Range of the first vector
+      sum_type{},                              // Initial value for accumulation
+      std::plus <> (), 
+      [=](auto col){
+        return -A(row, col) * X(col);
+      }
+    );
+
     if constexpr (explicit_diagonal) {
-      X(i) = divide(t, A(i,i));
+      X(row) = divide(t, A(row,row));
     }
     else {
-      X(i) = t;
+      X(row) = t;
     }
   }
 }

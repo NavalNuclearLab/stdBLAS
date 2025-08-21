@@ -80,14 +80,46 @@ Scalar matrix_one_norm(
     return result;
   }
 
-  // These loops can be rearranged for optimal memory access patterns,
-  // but it would require dynamic memory allocation.
-  for (size_type j = 0; j < A.extent(1); ++j) {
-    auto col_sum = init;
-    for (size_type i = 0; i < A.extent(0); ++i) {
-      col_sum += abs(A(i,j));
+  /*
+    if the number of rows is greater parallelize over rows
+    else parallelize over columns 
+  */
+
+  // if number of rows >=number of columns
+  size_type nrows = A.extent(0);
+  size_type ncols = A.extent(1);
+  auto rows = std::ranges::iota_view{size_type(0), nrows};
+  auto cols = std::ranges::iota_view{size_type(0), ncols};
+  if (nrows >= ncols) {
+    for (size_type col = 0; col < ncols; ++col) {
+      auto col_sum = std::transform_reduce(
+        std::execution::par,           // Parallel execution policy
+        rows.begin(), rows.end(),          // Range of the first vector
+        init,                              // Initial value for accumulation
+        std::plus <> (), 
+        [=](auto row){
+          return abs(A(row,col));
+        }
+      );
+      result = max(col_sum, result);
     }
-    result = max(col_sum, result);
+  }
+  else{
+    result = std::transform_reduce(
+      std::execution::par,           // Parallel execution policy
+      cols.begin(), cols.end(),          // Range of the first vector
+      init,                              // Initial value for accumulation
+      [=](auto a, auto b){
+        return max(a, b);
+      },
+      [=](auto col){
+        auto col_sum = init;
+        for (size_type row = 0; row < nrows; ++row) {
+          col_sum += abs(A(row,col));
+        }
+        return col_sum;
+      }
+    );
   }
   return result;
 }
