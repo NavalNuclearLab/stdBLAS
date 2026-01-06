@@ -204,6 +204,8 @@ void symmetric_matrix_rank_2_update(
 {
   using index_type = std::common_type_t<IndexType_x, IndexType_y, IndexType_A>;
   constexpr bool lower_tri = std::is_same_v<Triangle, lower_triangle_t>;
+
+  /*
   for (index_type j = 0; j < A.extent(1); ++j) {
     const index_type i_lower = lower_tri ? j : index_type(0);
     const index_type i_upper = lower_tri ? A.extent(0) : j+1;
@@ -215,6 +217,29 @@ void symmetric_matrix_rank_2_update(
 #endif // LINALG_FIX_RANK_UPDATES
     }
   }
+  */
+
+  index_type nrows = A.extent(0);
+  index_type ncols = A.extent(1);
+
+  auto rows = std::ranges::iota_view{index_type(0), nrows};
+  auto cols = std::ranges::iota_view{index_type(0), ncols};
+
+  auto pairs = std::ranges::cartesian_product_view(rows, cols);
+  std::for_each(std::execution::par,pairs.begin(), pairs.end(), [=](auto pair) {
+    auto [row, col] = pair;
+    if (lower_tri && col > row){
+      return;
+    }
+    if (!lower_tri && row > col){
+      return;
+    }   
+#if defined(LINALG_FIX_RANK_UPDATES)
+    A(row,col) = x(row) * y(col) + y(row) * x(col);
+#else
+    A(row,col) += x(row) * y(col) + y(row) * x(col);
+#endif // LINALG_FIX_RANK_UPDATES
+  });
 }
 
 #if defined(LINALG_FIX_RANK_UPDATES)
@@ -256,6 +281,8 @@ void symmetric_matrix_rank_2_update(
   using index_type = std::common_type_t<IndexType_x, IndexType_y,
     typename Extents_E::index_type, typename Extents_A::index_type>;
   constexpr bool lower_tri = std::is_same_v<Triangle, lower_triangle_t>;
+
+  /*
   for (index_type j = 0; j < A.extent(1); ++j) {
     const index_type i_lower = lower_tri ? j : index_type(0);
     const index_type i_upper = lower_tri ? A.extent(0) : j+1;
@@ -264,6 +291,25 @@ void symmetric_matrix_rank_2_update(
       A(i,j) = E(i,j) + x(i) * y(j) + y(i) * x(j);
     }
   }
+  */
+
+  index_type nrows = A.extent(0);
+  index_type ncols = A.extent(1);
+
+  auto rows = std::ranges::iota_view{index_type(0), nrows};
+  auto cols = std::ranges::iota_view{index_type(0), ncols};
+
+  auto pairs = std::ranges::cartesian_product_view(rows, cols);
+  std::for_each(std::execution::par,pairs.begin(), pairs.end(), [=](auto pair) {
+    auto [row, col] = pair;
+    if (lower_tri && col > row){
+      return;
+    }
+    if (!lower_tri && row > col){
+      return;
+    }   
+    A(row,col) = E(row,col) + x(row) * y(col) + y(row) * x(col);
+  });
 }
 #endif // LINALG_FIX_RANK_UPDATES
 

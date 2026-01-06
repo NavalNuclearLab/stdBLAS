@@ -400,9 +400,11 @@ void matrix_vector_product(
   mdspan<ElementType_y, extents<SizeType_y, ext_y>, Layout_y, Accessor_y> y,
   mdspan<ElementType_z, extents<SizeType_z, ext_z>, Layout_z, Accessor_z> z)
 {
+
+  /*
   using size_type = std::common_type_t<
     std::common_type_t<
-      std::common_type_t<typename Extents_A::size_type /* SizeType_A */, SizeType_x>,
+      std::common_type_t<typename Extents_A::size_type, SizeType_x>,
       SizeType_y>,
     SizeType_z>;
   for (size_type i = 0; i < A.extent(0); ++i) {
@@ -411,6 +413,32 @@ void matrix_vector_product(
       z(i) += A(i,j) * x(j);
     }
   }
+  */
+
+  using size_type = std::common_type_t<
+    std::common_type_t<
+      std::common_type_t<typename Extents_A::size_type /* SizeType_A */, SizeType_x>,
+      SizeType_y>,
+    SizeType_z>;
+  size_type n = A.extent(0);
+  auto rows = std::ranges::iota_view{size_type(0), n};
+  std::for_each(rows.begin(), rows.end(), [=](size_type row) {
+    z(row) = y(row);
+
+    size_type m = A.extent(1);
+    auto cols = std::ranges::iota_view{size_type(0), m};
+    z(row) = std::transform_reduce(
+      std::execution::par,           // Parallel execution policy
+      cols.begin(), cols.end(),          // Range of the first vector
+      z(row),                              // Initial value for accumulation
+      std::plus <> (), [=](auto col){
+        return A(row,col) * x(col);;
+      }
+    );
+    return z(row);
+  });
+
+
 }
 
 // FIXME (mfh 2022/06/19) Some work-around here for GCC 9 and/or macro insufficiencies.

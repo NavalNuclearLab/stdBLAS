@@ -42,27 +42,51 @@ void trsm_upper_triangular_left_side(
   using size_type = ::std::common_type_t<SizeType_A, SizeType_B, SizeType_X>;
 
   const size_type A_num_rows = A.extent(0);
+  const size_type A_num_cols = A.extent(1);
+
   const size_type B_num_cols = B.extent(1);
 
-  for (size_type k = 0; k < B_num_cols; ++k) {
+  // Loop over all the columns in B
+  // for (size_type k = 0; k < B.extent(1); ++k) {
+  // this can be a for_each
+  for (size_type colB = 0; colB < B_num_cols; ++colB) { 
     // One advantage of using signed index types is that you can write
     // descending loops with zero-based indices.
     // (AMK 6/8/21) i can't be a nonnegative type because the loop would be infinite
-    for (ptrdiff_t i = A_num_rows - 1; i >= 0; --i) {
+
+    // for (ptrdiff_t i = A_num_rows - 1; i >= 0; --i) {
+
+    // this cannot be a for_each because there is a dependency between rows of the solution
+    for (ptrdiff_t rowA = A_num_rows - 1; rowA >= 0; --rowA) {
       // TODO this would be a great opportunity for an implementer to
       // add value, by accumulating in extended precision (or at least
       // in a type with the max precision of X and B).
-      using sum_type = decltype (B(i,k) - A(0,0) * X(0,0));
+      using sum_type = decltype (B(rowA,colB) - A(0,0) * X(0,0));
       //using sum_type = typename out_object_t::element_type;
-      sum_type t (B(i,k));
+      //sum_type t (B(rowA,colB));
+
+      /*
       for (size_type j = i + 1; j < A_num_rows; ++j) {
         t = t - A(i,j) * X(j,k);
       }
+      */
+
+      auto colsA = std::ranges::iota_view{size_type(rowA + 1), A_num_cols};
+
+      sum_type t = std::transform_reduce(
+        std::execution::par,           // Parallel execution policy
+        colsA.begin(), colsA.end(),          // Range of the first vector
+        sum_type{B(rowA,colB)},                              // Initial value for accumulation
+        std::plus <> (), 
+        [=](auto colA){
+          return -A(rowA, colA) * X(colA, colB);
+        }
+      );
       if constexpr (explicit_diagonal) {
-        X(i,k) = t / A(i,i);
+        X(rowA,colB) = t / A(rowA,rowA);
       }
       else {
-        X(i,k) = t;
+        X(rowA,colB) = t;
       }
     }
   }
@@ -125,6 +149,7 @@ void trsm_upper_triangular_right_side(
   const size_type B_num_rows = B.extent(0);
   const size_type A_num_cols = A.extent(1);
 
+  /*
   for (size_type i = 0; i < B_num_rows; ++i) {
     for (size_type j = 0; j < A_num_cols; ++j) {
       using sum_type = decltype (B(i,j) - A(0,0) * X(0,0));
@@ -137,6 +162,40 @@ void trsm_upper_triangular_right_side(
       }
       else {
         X(i,j) = t;
+      }
+    }
+  }
+  */
+
+  for (size_type rowB = 0; rowB < B_num_rows; ++rowB) {
+    for (size_type colA = 0; colA < A_num_cols; ++colA) {
+      using sum_type = decltype (B(rowB,colA) - A(0,0) * X(0,0));
+      /*
+      sum_type t (B(rowB,colA));
+      for (size_type rowA = 0; rowA < colA; ++rowA) {
+        t = t - X(rowB,rowA) * A(rowA,colA);
+      }
+      */
+
+      const size_type A_num_rows = A.extent(0);
+
+      auto rowsA = std::ranges::iota_view{size_type(0), colA};
+
+      sum_type t = std::transform_reduce(
+        std::execution::par,           // Parallel execution policy
+        rowsA.begin(), rowsA.end(),          // Range of the first vector
+        sum_type{B(rowB,colA)},                              // Initial value for accumulation
+        std::plus <> (), 
+        [=](auto rowA){
+          return -X(rowB,rowA) * A(rowA,colA);
+        }
+      );
+
+      if constexpr (explicit_diagonal) {
+        X(rowB,colA) = t / A(colA,colA);
+      }
+      else {
+        X(rowB,colA) = t;
       }
     }
   }

@@ -156,7 +156,8 @@ message(STATUS "Build include directory: ${CMAKE_CURRENT_BINARY_DIR}/include/exp
 add_library(linalg INTERFACE)
 add_library(std::linalg ALIAS linalg)
 
-target_link_libraries(linalg INTERFACE std::mdspan)
+target_link_libraries(linalg INTERFACE mdspan)
+
 
 if(LINALG_ENABLE_TBB)
   target_link_libraries(linalg INTERFACE TBB::tbb)

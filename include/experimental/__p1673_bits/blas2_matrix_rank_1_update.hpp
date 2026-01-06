@@ -15,6 +15,8 @@
 // ************************************************************************
 //@HEADER
 
+#include <ranges>
+
 #ifndef LINALG_INCLUDE_EXPERIMENTAL___P1673_BITS_BLAS2_MATRIX_RANK_1_UPDATE_HPP_
 #define LINALG_INCLUDE_EXPERIMENTAL___P1673_BITS_BLAS2_MATRIX_RANK_1_UPDATE_HPP_
 
@@ -371,6 +373,7 @@ void matrix_rank_1_update(
 {
   using size_type = ::std::common_type_t<SizeType_x, SizeType_y, SizeType_A>;
 
+  /*
   for (size_type i = 0; i < A.extent(0); ++i) {
     for (size_type j = 0; j < A.extent(1); ++j) {
 #if defined(LINALG_FIX_RANK_UPDATES)
@@ -380,6 +383,23 @@ void matrix_rank_1_update(
 #endif
     }
   }
+  */
+
+  size_type nrows = A.extent(0);
+  size_type ncols = A.extent(1);
+
+  auto rows = std::ranges::iota_view{size_type(0), nrows};
+  auto cols = std::ranges::iota_view{size_type(0), ncols};
+
+  auto pairs = std::ranges::cartesian_product_view(rows, cols);
+  std::for_each(std::execution::par,pairs.begin(), pairs.end(), [=](auto pair) {
+    auto [row, col] = pair;
+    #if defined(LINALG_FIX_RANK_UPDATES)
+          A(row,col) = x(row) * y(col);
+    #else
+          A(row,col) += x(row) * y(col);
+    #endif
+  });
 }
 
 #if defined(LINALG_FIX_RANK_UPDATES)
@@ -412,11 +432,26 @@ void matrix_rank_1_update(
 {
   using size_type = ::std::common_type_t<SizeType_x, SizeType_y, SizeType_A>;
 
+  /*
   for (size_type i = 0; i < A.extent(0); ++i) {
     for (size_type j = 0; j < A.extent(1); ++j) {
       A(i,j) = E(i,j) + x(i) * y(j);
     }
   }
+  */
+
+
+  size_type nrows = A.extent(0);
+  size_type ncols = A.extent(1);
+
+  auto rows = std::ranges::iota_view{size_type(0), nrows};
+  auto cols = std::ranges::iota_view{size_type(0), ncols};
+
+  auto pairs = std::ranges::cartesian_product_view(rows, cols);
+  std::for_each(std::execution::par,pairs.begin(), pairs.end(), [=](auto pair) {
+    auto [row, col] = pair;
+    A(row,col) = E(row,col) + x(row) * y(col);
+  });
 }
 #endif // LINALG_FIX_RANK_UPDATES
 
@@ -694,6 +729,8 @@ void symmetric_matrix_rank_1_update(
   mdspan<ElementType_A, extents<SizeType_A, numRows_A, numCols_A>, Layout_A, Accessor_A> A,
   Triangle /* t */)
 {
+
+  /*
   using index_type = std::common_type_t<SizeType_x, SizeType_A>;
 
   if constexpr (std::is_same_v<Triangle, lower_triangle_t>) {
@@ -716,6 +753,32 @@ void symmetric_matrix_rank_1_update(
       }
     }
   }
+  */
+
+  using index_type = std::common_type_t<SizeType_x, SizeType_A>;
+
+  constexpr bool lower_tri = std::is_same_v<Triangle, lower_triangle_t>;
+
+  index_type nrows = A.extent(0);
+  index_type ncols = A.extent(1);
+
+  auto rows = std::ranges::iota_view{index_type(0), nrows};
+  auto cols = std::ranges::iota_view{index_type(0), ncols};
+
+  auto pairs = std::ranges::cartesian_product_view(rows, cols);
+  std::for_each(std::execution::par,pairs.begin(), pairs.end(), [=](auto pair) {
+    auto [row, col] = pair;
+    if (lower_tri && col > row){
+      return;
+    }
+    if (!lower_tri && row > col){
+      return;
+    }   
+#if defined(LINALG_FIX_RANK_UPDATES)
+    A(row,col) = typename decltype(A)::value_type{};
+#endif // LINALG_FIX_RANK_UPDATES
+    A(row,col) += alpha * x(row) * x(col);
+  });
 }
 
 #if defined(LINALG_FIX_RANK_UPDATES)
@@ -1036,6 +1099,11 @@ void symmetric_matrix_rank_1_update(
     }
   }
 }
+
+
+
+
+
 #endif // LINALG_FIX_RANK_UPDATES
 
 // Overwriting symmetric rank-1 matrix update
