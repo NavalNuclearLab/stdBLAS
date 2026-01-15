@@ -758,11 +758,11 @@ void matrix_product(
 
     //for (size_type row_c = 0; row_c < nrows_C; ++row_c) {
     auto rows_c = std::ranges::iota_view{size_type(0), nrows_C};
-    std::for_each(std::execution::par,rows_c.begin(), rows_c.end(), [=](size_type row_c) {
+    std::for(std::execution::par,rows_c.begin(), rows_c.end(), [=](size_type row_c) {
    
       //for (size_type col_c = 0; col_c < ncols_C; ++col_c) {
       auto cols_c = std::ranges::iota_view{size_type(0), ncols_C};
-      std::for_each(std::execution::par,cols_c.begin(), cols_c.end(), [=](size_type col_c) {
+      std::for(std::execution::par,cols_c.begin(), cols_c.end(), [=](size_type col_c) {
 
         C(row_c,col_c) = ElementType_C{};
         // dot product of row and vector
@@ -877,9 +877,9 @@ void matrix_product(
   auto rows_c = std::ranges::iota_view{size_type(0), nrows_C};
   auto cols_c = std::ranges::iota_view{size_type(0), ncols_C};
 
-  std::for_each(std::execution::par,rows_c.begin(), rows_c.end(), [=](size_type row_c) {
+  std::for(std::execution::par,rows_c.begin(), rows_c.end(), [=](size_type row_c) {
     auto cols_c = std::ranges::iota_view{size_type(0), ncols_C};
-    std::for_each(std::execution::par,cols_c.begin(), cols_c.end(), [=](size_type col_c) {
+    std::for(std::execution::par,cols_c.begin(), cols_c.end(), [=](size_type col_c) {
       C(row_c,col_c) = E(row_c,col_c);
       
       // dot product of row and vector

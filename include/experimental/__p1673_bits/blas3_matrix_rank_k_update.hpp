@@ -295,10 +295,10 @@ void symmetric_matrix_rank_k_update(
   //for (size_type row_c = 0; row_c < nrows_C; ++row_c) {
   auto rows = std::ranges::iota_view{size_type(0), r};
   auto inner_dim = std::ranges::iota_view{size_type(0), c};
-  std::for_each(std::execution::par,cols.begin(), cols.end(), [=](size_type col) {
+  std::for(std::execution::par,cols.begin(), cols.end(), [=](size_type col) {
   
     //for (size_type col_c = 0; col_c < ncols_C; ++col_c) {
-    std::for_each(std::execution::par,rows.begin(), rows.end(), [=](size_type row) {
+    std::for(std::execution::par,rows.begin(), rows.end(), [=](size_type row) {
       if (lower_tri && col > row){
         return;
       }
@@ -440,8 +440,8 @@ void symmetric_matrix_rank_k_update(
   auto cols = std::ranges::iota_view{size_type(0), c};
   auto rows = std::ranges::iota_view{size_type(0), r};
   auto inner_dim = std::ranges::iota_view{size_type(0), c};
-  std::for_each(std::execution::par,cols.begin(), cols.end(), [=](size_type col) {
-    std::for_each(std::execution::par,rows.begin(), rows.end(), [=](size_type row) {
+  std::for(std::execution::par,cols.begin(), cols.end(), [=](size_type col) {
+    std::for(std::execution::par,rows.begin(), rows.end(), [=](size_type row) {
       if (lower_tri && col > row){
         return;
       }
@@ -584,8 +584,8 @@ void symmetric_matrix_rank_k_update(
   auto cols = std::ranges::iota_view{size_type(0), c};
   auto rows = std::ranges::iota_view{size_type(0), r};
   auto inner_dim = std::ranges::iota_view{size_type(0), c};
-  std::for_each(std::execution::par,cols.begin(), cols.end(), [=](size_type col) {
-    std::for_each(std::execution::par,rows.begin(), rows.end(), [=](size_type row) {
+  std::for(std::execution::par,cols.begin(), cols.end(), [=](size_type col) {
+    std::for(std::execution::par,rows.begin(), rows.end(), [=](size_type row) {
       if (lower_tri && col > row){
         return;
       }
@@ -734,8 +734,8 @@ void symmetric_matrix_rank_k_update(
   auto cols = std::ranges::iota_view{size_type(0), c};
   auto rows = std::ranges::iota_view{size_type(0), r};
   auto inner_dim = std::ranges::iota_view{size_type(0), c};
-  std::for_each(std::execution::par,cols.begin(), cols.end(), [=](size_type col) {
-    std::for_each(std::execution::par,rows.begin(), rows.end(), [=](size_type row) {
+  std::for(std::execution::par,cols.begin(), cols.end(), [=](size_type col) {
+    std::for(std::execution::par,rows.begin(), rows.end(), [=](size_type row) {
       if (lower_tri && col > row){
         return;
       }

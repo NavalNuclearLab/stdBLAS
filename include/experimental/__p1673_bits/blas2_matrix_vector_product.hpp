@@ -422,7 +422,7 @@ void matrix_vector_product(
     SizeType_z>;
   size_type n = A.extent(0);
   auto rows = std::ranges::iota_view{size_type(0), n};
-  std::for_each(rows.begin(), rows.end(), [=](size_type row) {
+  std::for(rows.begin(), rows.end(), [=](size_type row) {
     z(row) = y(row);
 
     size_type m = A.extent(1);
