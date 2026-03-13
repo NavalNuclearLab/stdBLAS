@@ -60,7 +60,7 @@ void add_rank_1(
   using size_type = std::common_type_t<SizeType_x, SizeType_y, SizeType_z>;
   size_type n = z.extent(0);
   auto rows = std::ranges::iota_view{size_type(0), n};
-  std::for_each(rows.begin(), rows.end(), [=](size_type i) {
+  std::for_each(std::execution::par,rows.begin(), rows.end(), [=](size_type i) {
     z(i) = x(i) + y(i);
   });
 }
@@ -112,7 +112,7 @@ void add_rank_2(
   auto rows = std::ranges::iota_view{size_type(0), x.extent(0)};
   auto cols = std::ranges::iota_view{size_type(0), x.extent(1)};
   auto pairs = std::ranges::cartesian_product_view(rows, cols);
-  std::for_each(pairs.begin(), pairs.end(), [=](auto pair){
+  std::for_each(std::execution::par,pairs.begin(), pairs.end(), [=](auto pair){
     auto [r, c] = pair;
     z(r, c) = x(r, c) + y(r, c);
   } );

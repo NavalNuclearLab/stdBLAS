@@ -53,7 +53,7 @@ void copy_rank_1(
   */
   size_type n = y.extent(0);
   auto rows = std::ranges::iota_view{size_type(0), n};
-  std::for_each(rows.begin(), rows.end(), [=](size_type row) {
+  std::for_each(std::execution::par,rows.begin(), rows.end(), [=](size_type row) {
     y(row) = x(row);
   });
 }

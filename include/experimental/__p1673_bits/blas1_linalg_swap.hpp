@@ -53,7 +53,7 @@ void swap_rank_1(
   
   size_type n = y.extent(0);
   auto rows = std::ranges::iota_view{size_type(0), n};
-  std::for_each(rows.begin(), rows.end(), [=](size_type i) {
+  std::for_each(std::execution::par,rows.begin(), rows.end(), [=](size_type i) {
     swap(x(i), y(i));
   });
 }
@@ -87,7 +87,7 @@ void swap_rank_2(
   auto rows = std::ranges::iota_view{size_type(0), x.extent(0)};
   auto cols = std::ranges::iota_view{size_type(0), x.extent(1)};
   auto pairs = std::ranges::cartesian_product_view(rows, cols);
-  std::for_each(pairs.begin(), pairs.end(), [=](auto pair){
+  std::for_each(std::execution::par,pairs.begin(), pairs.end(), [=](auto pair){
     auto [r, c] = pair;
     swap(x(r,c), y(r,c));
   } );
