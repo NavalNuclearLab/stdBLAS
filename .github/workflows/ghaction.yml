@@ -25,15 +25,15 @@ jobs:
 
     - name: Configure mdspan
       working-directory: mdspan-build
-      run: cmake -S $GITHUB_WORKSPACE/mdspan-src -B $GITHUB_WORKSPACE/mdspan-build -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/mdspan-install
+      run: cmake -S ${{ github.workspace }}/mdspan-src -B ${{ github.workspace }}/mdspan-build -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/mdspan-install
 
     - name: Build mdspan
       working-directory: mdspan-build
-      run: cmake --build $GITHUB_WORKSPACE/mdspan-build -j 3
+      run: cmake --build ${{ github.workspace }}/mdspan-build -j 3
 
     - name: Install mdspan
       working-directory: mdspan-build
-      run: cmake --install $GITHUB_WORKSPACE/mdspan-build
+      run: cmake --install ${{ github.workspace }}/mdspan-build
 
     - name: Check Out
       uses: actions/checkout@v4
@@ -43,12 +43,12 @@ jobs:
     - name: Configure stdblas
       shell: bash
       working-directory: stdblas-build
-      run: cmake -S $GITHUB_WORKSPACE/stdblas-src -B $GITHUB_WORKSPACE/stdblas-build -Dmdspan_DIR=$GITHUB_WORKSPACE/mdspan-install/ -DLINALG_ENABLE_TESTS=On -DLINALG_ENABLE_EXAMPLES=On -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/stdblas-install
+      run: cmake -S ${{ github.workspace }}/stdblas-src -B ${{ github.workspace }}/stdblas-build -Dmdspan_DIR=${{ github.workspace }}/mdspan-install/ -DLINALG_ENABLE_TESTS=On -DLINALG_ENABLE_EXAMPLES=On -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/stdblas-install
 
     - name: Build stdblas
       working-directory: stdblas-build
       shell: bash
-      run: cmake --build $GITHUB_WORKSPACE/stdblas-build -j 3
+      run: cmake --build ${{ github.workspace }}/stdblas-build -j 3
 
     - name: Test stdblas
       working-directory: stdblas-build
@@ -58,4 +58,4 @@ jobs:
     - name: Install stdblas
       working-directory: stdblas-build
       shell: bash
-      run: cmake --install $GITHUB_WORKSPACE/stdblas-build
+      run: cmake --install ${{ github.workspace }}/stdblas-build
