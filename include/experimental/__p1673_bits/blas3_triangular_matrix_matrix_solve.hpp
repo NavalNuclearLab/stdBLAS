@@ -137,11 +137,9 @@ void trsm_lower_triangular_left_side(
   }
   */
 
-  for (size_type rowB = 0; rowB < B_num_rows; ++rowB) {
-    for (size_type colA = 0; colA < A_num_cols; ++colA) {
+  for (size_type rowB = 0; rowB < B_num_cols; ++rowB) {
+    for (size_type colA = 0; colA < A_num_rows; ++colA) {
       using sum_type = decltype (B(rowB,colA) - A(0,0) * X(0,0));
-
-      const size_type A_num_rows = A.extent(0);
 
       auto rowsA = std::ranges::iota_view{size_type(0), colA};
 
@@ -151,8 +149,8 @@ void trsm_lower_triangular_left_side(
         sum_type{B(rowB,colA)},                              // Initial value for accumulation
         std::plus <> (), 
         [=](auto rowA){
-          if rowA < colA{  // Bob added if row > col we are in the upper triangle so return
-            return
+          if( rowA < colA ){  // Bob added if row > col we are in the upper triangle so return
+            return;
           }
           else{
             return -A(rowA,colA) * X(rowB,rowA);
@@ -189,7 +187,7 @@ void trsm_upper_triangular_right_side(
   const size_type B_num_rows = B.extent(0);
   const size_type A_num_cols = A.extent(1);
 
-  /*
+  
   for (size_type i = 0; i < B_num_rows; ++i) {
     for (size_type j = 0; j < A_num_cols; ++j) {
       using sum_type = decltype (B(i,j) - A(0,0) * X(0,0));
@@ -205,8 +203,9 @@ void trsm_upper_triangular_right_side(
       }
     }
   }
-  */
+  
 
+  /*
   for (size_type rowB = 0; rowB < B_num_rows; ++rowB) {
     for (size_type colA = 0; colA < A_num_cols; ++colA) {
       using sum_type = decltype (B(rowB,colA) - A(0,0) * X(0,0));
@@ -221,8 +220,8 @@ void trsm_upper_triangular_right_side(
         sum_type{B(rowB,colA)},                              // Initial value for accumulation
         std::plus <> (), 
         [=](auto rowA){
-          if rowA > colA{  // Bob added if row > col we are in the lower triangle so return
-            return
+          if (rowA > colA){  // Bob added if row > col we are in the lower triangle so return
+            return;
           }
           else{
             return -X(rowB,rowA) * A(rowA,colA);
@@ -238,6 +237,8 @@ void trsm_upper_triangular_right_side(
       }
     }
   }
+  */
+  
 }
 
 template<
@@ -261,7 +262,7 @@ void trsm_lower_triangular_right_side(
   const size_type A_num_rows = A.extent(0);
   const signed_index_type A_num_cols = A.extent(1);
 
-  /*
+  
   for (size_type i = 0; i < B_num_rows; ++i) {
     for (signed_index_type j = A_num_cols - 1; j >= 0; --j) {
       using sum_type = decltype (B(i,j) - A(0,0) * X(0,0));
@@ -277,8 +278,9 @@ void trsm_lower_triangular_right_side(
       }
     }
   }
-  */
+  
 
+  /*
   for (size_type rowB = 0; rowB < B_num_rows; ++rowB) {
     for (size_type colA = 0; colA < A_num_cols; ++colA) {
       using sum_type = decltype (B(rowB,colA) - A(0,0) * X(0,0));
@@ -293,8 +295,8 @@ void trsm_lower_triangular_right_side(
         sum_type{B(rowB,colA)},                              // Initial value for accumulation
         std::plus <> (), 
         [=](auto rowA){
-          if rowA < colA{  // Bob added if row > col we are in the upper triangle so return
-            return
+          if (rowA < colA){  // Bob added if row > col we are in the upper triangle so return
+            return;
           }
           else{
             return -X(rowB,rowA) * A(rowA,colA);
@@ -310,6 +312,8 @@ void trsm_lower_triangular_right_side(
       }
     }
   }
+  */
+
 }
 
 template <class Exec, class A_t, class Tri_t, class D_t, class B_t, class X_t, class = void>

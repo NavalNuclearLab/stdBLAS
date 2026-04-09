@@ -198,10 +198,10 @@ void symmetric_matrix_rank_2k_update(
   //for (size_type row_c = 0; row_c < nrows_C; ++row_c) {
   auto rows = std::ranges::iota_view{size_type(0), n};
   auto inner_dim = std::ranges::iota_view{size_type(0), k};
-  std::for(std::execution::par,rows.begin(), rows.end(), [=](size_type row) {
+  std::for_each(std::execution::par,rows.begin(), rows.end(), [=](size_type row) {
   
     //for (size_type col_c = 0; col_c < ncols_C; ++col_c) {
-    std::for(std::execution::par,cols.begin(), cols.end(), [=](size_type col) {
+    std::for_each(std::execution::par,cols.begin(), cols.end(), [=](size_type col) {
       if (lower_tri && col > row){
         return;
       }
@@ -338,9 +338,9 @@ void symmetric_matrix_rank_2k_update(
   auto rows_c = std::ranges::iota_view{size_type(0), nrows_C};
   auto cols_c = std::ranges::iota_view{size_type(0), ncols_C};
 
-  std::for(std::execution::par,rows_c.begin(), rows_c.end(), [=](size_type row_c) {
+  std::for_each(std::execution::par,rows_c.begin(), rows_c.end(), [=](size_type row_c) {
     auto cols_c = std::ranges::iota_view{size_type(0), ncols_C};
-    std::for(std::execution::par,cols_c.begin(), cols_c.end(), [=](size_type col_c) {
+    std::for_each(std::execution::par,cols_c.begin(), cols_c.end(), [=](size_type col_c) {
 
       if (lower_tri && col > row){
         return;
@@ -483,14 +483,14 @@ void hermitian_matrix_rank_2k_update(
   auto rows_c = std::ranges::iota_view{size_type(0), nrows_C};
   auto cols_c = std::ranges::iota_view{size_type(0), ncols_C};
 
-  std::for(std::execution::par,rows_c.begin(), rows_c.end(), [=](size_type row_c) {
+  std::for_each(std::execution::par,rows_c.begin(), rows_c.end(), [=](size_type row_c) {
 
 #if !defined(LINALG_FIX_RANK_UPDATES)
     C(row_c,row_c) = impl::real_if_needed(C(row_c,row_c));
 #endif
 
     auto cols_c = std::ranges::iota_view{size_type(0), ncols_C};
-    std::for(std::execution::par,cols_c.begin(), cols_c.end(), [=](size_type col_c) {
+    std::for_each(std::execution::par,cols_c.begin(), cols_c.end(), [=](size_type col_c) {
 
 #if defined(LINALG_FIX_RANK_UPDATES)
       C(row_c,col_c) = ElementType_C{};
@@ -506,8 +506,8 @@ void hermitian_matrix_rank_2k_update(
           return A(row_c,col_a) * impl::conj_if_needed(B(col_c,col_a)) + B(row_c,col_a) * impl::conj_if_needed(A(col_c,col_a));
         }
       );
-    }
-  }
+    });
+  });
 }
 
 template<class ExecutionPolicy,
@@ -621,14 +621,14 @@ void hermitian_matrix_rank_2k_update(
   auto rows_c = std::ranges::iota_view{size_type(0), nrows_C};
   auto cols_c = std::ranges::iota_view{size_type(0), ncols_C};
 
-  std::for(std::execution::par,rows_c.begin(), rows_c.end(), [=](size_type row_c) {
+  std::for_each(std::execution::par,rows_c.begin(), rows_c.end(), [=](size_type row_c) {
 
 #if !defined(LINALG_FIX_RANK_UPDATES)
     C(row_c,row_c) = impl::real_if_needed(C(row_c,row_c));
 #endif
 
     auto cols_c = std::ranges::iota_view{size_type(0), ncols_C};
-    std::for(std::execution::par,cols_c.begin(), cols_c.end(), [=](size_type col_c) {
+    std::for_each(std::execution::par,cols_c.begin(), cols_c.end(), [=](size_type col_c) {
 
 #if defined(LINALG_FIX_RANK_UPDATES)
       C(row_c,col_c) = ElementType_C{};
@@ -644,8 +644,8 @@ void hermitian_matrix_rank_2k_update(
           return A(row_c,col_a) * impl::conj_if_needed(B(col_c,col_a)) + B(row_c,col_a) * impl::conj_if_needed(A(col_c,col_a));
         }
       );
-    }
-  }
+    });
+  });
 }
 
 template<class ExecutionPolicy,
