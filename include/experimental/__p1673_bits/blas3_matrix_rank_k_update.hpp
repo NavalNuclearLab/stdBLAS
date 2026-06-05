@@ -335,19 +335,6 @@ void symmetric_matrix_rank_k_update(
     std::is_same_v<Triangle, lower_triangle_t>;
   using size_type = std::common_type_t<SizeType_A, SizeType_C>;
 
-  /*
-  for (size_type j = 0; j < C.extent(1); ++j) {
-    const size_type i_lower = lower_tri ? j : size_type(0);
-    const size_type i_upper = lower_tri ? C.extent(0) : j+1;
-    for (size_type i = i_lower; i < i_upper; ++i) {
-      C(i, j) = ElementType_C{};
-      for (size_type k = 0; k < A.extent(1); ++k) {
-          C(i, j) += A(i, k) * A(j, k);
-      }
-    }
-  }
-  */
-
   size_type r = A.extent(0);
   size_type c = A.extent(1);
   auto cols = std::ranges::iota_view{size_type(0), c};
@@ -619,19 +606,6 @@ void symmetric_matrix_rank_k_update(
     std::is_same_v<Triangle, lower_triangle_t>;
   using size_type = std::common_type_t<SizeType_A, SizeType_C>;
 
-  /*
-  for (size_type j = 0; j < C.extent(1); ++j) {
-    const size_type i_lower = lower_tri ? j : size_type(0);
-    const size_type i_upper = lower_tri ? C.extent(0) : j+1;
-    for (size_type i = i_lower; i < i_upper; ++i) {
-      C(i, j) = E(i, j);
-      for (size_type k = 0; k < A.extent(1); ++k) {
-          C(i, j) += A(i, k) * A(j, k);
-      }
-    }
-  }
-  */
-
   size_type r = A.extent(0);
   size_type c = A.extent(1);
   auto cols = std::ranges::iota_view{size_type(0), c};
@@ -650,7 +624,7 @@ void symmetric_matrix_rank_k_update(
       C(row,col) = std::transform_reduce(
         std::execution::par,           // Parallel execution policy
         inner_dim.begin(), inner_dim.end(),          // Range of the first vector
-        ElementType_C{},                              // Initial value for accumulation
+        E(row,col),                              // Initial value for accumulation
         std::plus <> (), 
         [=](auto inner_index){
           return A(row, inner_index) * A(col, inner_index);
