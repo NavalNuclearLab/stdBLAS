@@ -59,9 +59,89 @@ using MdSpan::submdspan;
 using MdSpan::layout_left_padded; // not in experimental namespace
 using MdSpan::layout_right_padded;
 
+using LinearAlgebra::upper_triangle_t;
+using LinearAlgebra::lower_triangle_t;
+
 using dbl_vector_t = mdspan<double, extents<std::size_t, dynamic_extent>>;
 using cpx_vector_t = mdspan<std::complex<double>, extents<std::size_t, dynamic_extent>>;
 constexpr ptrdiff_t NROWS = 10u;
+
+template<class ElementType,
+         class Extents,
+         class Layout,
+         class Accessor>
+std::string to_string( mdspan<ElementType, Extents, Layout, Accessor> x) {
+  std::stringstream ss;
+  constexpr auto ndims = x.rank();
+  if constexpr(ndims == 1) {
+    for(std::size_t i = 0; i < x.extent(0); ++i) {
+      ss << x(i) << " ";
+    }
+    ss << "\n";
+  }
+  else if constexpr(ndims == 2) {
+    for(std::size_t i = 0; i < x.extent(0); ++i) {
+      for(std::size_t j = 0; j < x.extent(1); ++j) {
+        ss << x(i, j) << " ";
+      }
+      ss << "\n";
+    }
+  }
+  else {
+    printf("to_string(mdspan): only implemented for rank 1 and 2\n");
+  }
+  return ss.str();
+}
+
+template<class ElementType,
+         class Extents,
+         class Layout,
+         class Accessor,
+         class Triangle>
+std::string to_string( mdspan<ElementType, Extents, Layout, Accessor> x, 
+                       Triangle /* t */, 
+                       bool is_symmetric ) {
+  std::stringstream ss;
+  constexpr auto ndims = x.rank();
+  constexpr bool lower_tri =
+    std::is_same_v<Triangle, lower_triangle_t>;
+  if constexpr(ndims == 2) {
+    for(std::size_t i = 0; i < x.extent(0); ++i) {
+      for(std::size_t j = 0; j < x.extent(1); ++j) {
+        if constexpr(lower_tri) {
+          if (j > i) {
+            if(is_symmetric){
+              ss << x(j, i);
+            }
+            else{
+              ss << "0 ";
+            }
+            ss << " ";
+            continue;
+          }
+        }
+        else {
+          if (i > j) {
+            if(is_symmetric){
+              ss << x(j, i);
+            }
+            else{
+              ss << "0 ";
+            }
+            ss << " ";
+            continue;
+          }
+        }
+        ss << x(i, j) << " ";
+      }
+      ss << "\n";
+    }
+  }
+  else {
+    printf("to_string(mdspan, Triangle): only implemented for rank 2\n");
+  }
+  return ss.str();
+}
 
 // 1-norm:   4.6
 // inf-norm: 0.9

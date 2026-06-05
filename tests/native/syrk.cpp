@@ -80,7 +80,13 @@ namespace {
     WC = WC_original;
     expected_storage = expected_storage_original;
 
+    std::cout << "A before rank_k_update:\n" << to_string(A) << "\n";
+    std::cout << "C before rank_k_update:\n" << to_string(C, upper_triangle, true) << "\n";
+
     symmetric_matrix_rank_k_update(A, C, C, upper_triangle);
+
+    std::cout << "A after rank_k_update:\n" << to_string(A) << "\n";
+    std::cout << "C after rank_k_update:\n" << to_string(C, upper_triangle, true) << "\n";
 
     for (std::size_t row = 0; row < C.extent(0); ++row) {
       for (std::size_t col = 0; col < C.extent(1); ++col) {
