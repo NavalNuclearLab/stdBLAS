@@ -984,39 +984,8 @@ void triangular_matrix_product(
   mdspan<ElementType_C, extents<SizeType_C, numRows_C, numCols_C>, Layout_C, Accessor_C> C)
 {
   using size_type = ::std::common_type_t<SizeType_A, SizeType_B, SizeType_C>;
-  constexpr bool explicitDiagonal =
-    std::is_same_v<DiagonalStorage, explicit_diagonal_t>;
-
-  /*
-  if constexpr (std::is_same_v<Triangle, lower_triangle_t>) {
-    for (size_type j = 0; j < C.extent(1); ++j) {
-      for (size_type i = 0; i < C.extent(0); ++i) {
-        C(i,j) = ElementType_C{};
-        const ptrdiff_t k_upper = explicitDiagonal ? i : i - ptrdiff_t(1);
-        for (ptrdiff_t k = 0; k <= k_upper; ++k) {
-          C(i,j) += A(i,k) * B(k,j);
-        }
-        if constexpr (! explicitDiagonal) {
-          C(i,j) += B(i,j);   // 1 times
-        }
-      }
-    }
-  }
-  else { // upper_triangle_t
-    for (size_type j = 0; j < C.extent(1); ++j) {
-      for (size_type i = 0; i < C.extent(0); ++i) {
-        C(i,j) = ElementType_C{};
-        const size_type k_lower = explicitDiagonal ? i : i + 1;
-        for (size_type k = k_lower; k < C.extent(0); ++k) {
-          C(i,j) += A(i,k) * B(k,j);
-        }
-        if constexpr (! explicitDiagonal) {
-          C(i,j) += B(i,j);  // 1 times
-        }
-      }
-    }
-  }
-  */
+  constexpr bool implicitUnitDiagonal =
+    std::is_same_v<DiagonalStorage, implicit_unit_diagonal_t>;
   
   size_type nrows_C = C.extent(0);
   size_type ncols_C = C.extent(1);
@@ -1028,16 +997,19 @@ void triangular_matrix_product(
   if constexpr (std::is_same_v<Triangle, lower_triangle_t>) {
     std::for_each(std::execution::par,rows_c.begin(), rows_c.end(), [=](size_type row_c) {
       std::for_each(std::execution::par,cols_c.begin(), cols_c.end(), [=](size_type col_c) {
-        C(row_c,col_c) = ElementType_C{};
-      
-      // dot product of row and vector
+        // dot product of row of A and column of B
         C(row_c,col_c) = std::transform_reduce(
           std::execution::par,                 // Parallel execution policy
           cols_a.begin(), cols_a.end(),        // Range of the first vector
           ElementType_C{},    // Initial value for accumulation
           std::plus <> (), 
           [=](auto col_a){
-            if (col_c > row_c){  // this is lower_triangle so if col > row skip it
+            if constexpr (implicitUnitDiagonal) {
+              if (col_a == row_c){  // this is the diagonal element and we are assuming its value to be 1
+                return B(col_a, col_c);
+              }
+            }
+            if (col_a > row_c){  // this is lower_triangle so if col > row skip it
               return ElementType_C{};
             }
             else{
@@ -1051,14 +1023,17 @@ void triangular_matrix_product(
   else{
     std::for_each(std::execution::par,rows_c.begin(), rows_c.end(), [=](size_type row_c) {
       std::for_each(std::execution::par,cols_c.begin(), cols_c.end(), [=](size_type col_c) {  
-        C(row_c,col_c) = ElementType_C{};
-      
-      // dot product of row and vector
+        // dot product of row of A and column of B
         C(row_c,col_c) = std::transform_reduce(
           std::execution::par,           // Parallel execution policy
           cols_a.begin(), cols_a.end(),        // Range of the first vector
           ElementType_C{},    // Initial value for accumulation
           std::plus <> (), [=](auto col_a){
+            if constexpr (implicitUnitDiagonal) {
+              if (col_a == row_c){  // this is the diagonal element and we are assuming its value to be 1
+                return B(col_a, col_c);
+              }
+            }
             if (row_c > col_a){    // this is upper_triangle so if row > col skip it
               return ElementType_C{};
             }
@@ -1335,38 +1310,6 @@ void triangular_matrix_product(
   constexpr bool explicitDiagonal =
     std::is_same_v<DiagonalStorage, explicit_diagonal_t>;
 
-  /*
-  if constexpr (std::is_same_v<Triangle, lower_triangle_t>) {
-    for (size_type j = 0; j < C.extent(1); ++j) {
-      for (size_type i = 0; i < C.extent(0); ++i) {
-        C(i,j) = E(i,j);
-        const ptrdiff_t k_upper = explicitDiagonal ? i : i - ptrdiff_t(1);
-        for (ptrdiff_t k = 0; k <= k_upper; ++k) {
-          C(i,j) += A(i,k) * B(k,j);
-        }
-        if constexpr (! explicitDiagonal) {
-          C(i,j) += B(i,j);   // 1 times
-        }
-      }
-    }
-  }
-  else { // upper_triangle_t
-    for (size_type j = 0; j < C.extent(1); ++j) {
-      for (size_type i = 0; i < C.extent(0); ++i) {
-        C(i,j) = E(i,j);
-        const size_type k_lower = explicitDiagonal ? i : i + 1;
-        for (size_type k = k_lower; k < C.extent(0); ++k) {
-          C(i,j) += A(i,k) * B(k,j);
-        }
-        if constexpr (! explicitDiagonal) {
-          C(i,j) += B(i,j);   //  1 times
-        }
-      }
-    }
-  }
-  */
-
-  
   size_type nrows_C = C.extent(0);
   size_type ncols_C = C.extent(1);
   size_type ncols_A = A.extent(1);
@@ -1377,16 +1320,14 @@ void triangular_matrix_product(
   if constexpr (std::is_same_v<Triangle, lower_triangle_t>) {
     std::for_each(std::execution::par,rows_c.begin(), rows_c.end(), [=](size_type row_c) {
       std::for_each(std::execution::par,cols_c.begin(), cols_c.end(), [=](size_type col_c) {
-        C(row_c,col_c) = E(row_c,col_c);
-      
-        // dot product of row and vector
+        // dot product of row of A and column of B
         C(row_c,col_c) = std::transform_reduce(
           std::execution::par,                 // Parallel execution policy
           cols_a.begin(), cols_a.end(),        // Range of the first vector
-          C(row_c,col_c),    // Initial value for accumulation
+          E(row_c,col_c),    // Initial value for accumulation
           std::plus <> (), 
           [=](auto col_a){
-            if (col_c > row_c){  // this is lower_triangle so if col > row skip it
+            if (col_a > row_c){  // this is lower_triangle so if col > row skip it
               return ElementType_C{};  // Bob check this 
             }
             else{
@@ -1400,16 +1341,14 @@ void triangular_matrix_product(
   else{
     std::for_each(std::execution::par,rows_c.begin(), rows_c.end(), [=](size_type row_c) {
       std::for_each(std::execution::par,cols_c.begin(), cols_c.end(), [=](size_type col_c) {
-        C(row_c,col_c) = E(row_c,col_c);
-      
-        // dot product of row and vector
+        // dot product of row of A and column of B
         C(row_c,col_c) = std::transform_reduce(
           std::execution::par,                 // Parallel execution policy
           cols_a.begin(), cols_a.end(),        // Range of the first vector
-          C(row_c,col_c),    // Initial value for accumulation
+          E(row_c,col_c),    // Initial value for accumulation
           std::plus <> (), 
           [=](auto col_a){
-            if (row_c > col_c){  // this is lower_triangle so if col > row skip it
+            if (row_c > col_a){  // this is lower_triangle so if col > row skip it
               return ElementType_C{};  // Bob check this 
             }
             else{
