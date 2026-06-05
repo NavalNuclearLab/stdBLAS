@@ -1018,7 +1018,6 @@ void triangular_matrix_product(
   }
   */
   
-  
   size_type nrows_C = C.extent(0);
   size_type ncols_C = C.extent(1);
   size_type ncols_A = A.extent(1);
@@ -1042,7 +1041,7 @@ void triangular_matrix_product(
               return ElementType_C{};
             }
             else{
-              return A(row_c, cols_a) * B(cols_a, col_c);   // we are acessing the lower tirangular part of the matrix
+              return A(row_c, col_a) * B(col_a, col_c);   // we are acessing the lower tirangular part of the matrix
             }
           } 
         );
@@ -1059,20 +1058,18 @@ void triangular_matrix_product(
           std::execution::par,           // Parallel execution policy
           cols_a.begin(), cols_a.end(),        // Range of the first vector
           ElementType_C{},    // Initial value for accumulation
-          std::plus <> (), [=](auto col){
-            if (row_c > col){    // this is upper_triangle so if row > col skip it
+          std::plus <> (), [=](auto col_a){
+            if (row_c > col_a){    // this is upper_triangle so if row > col skip it
               return ElementType_C{};
             }
             else{
-              return A(row_c, cols_a) * B(cols_a, col_c);   // we are acessing the upper tirangular part of the matrix
+              return A(row_c, col_a) * B(col_a, col_c);   // we are acessing the upper tirangular part of the matrix
             }
           } 
         );
       });
     });
   }
-
-
 }
 
 template<class ExecutionPolicy,
@@ -1338,7 +1335,7 @@ void triangular_matrix_product(
   constexpr bool explicitDiagonal =
     std::is_same_v<DiagonalStorage, explicit_diagonal_t>;
 
-  
+  /*
   if constexpr (std::is_same_v<Triangle, lower_triangle_t>) {
     for (size_type j = 0; j < C.extent(1); ++j) {
       for (size_type i = 0; i < C.extent(0); ++i) {
@@ -1367,9 +1364,9 @@ void triangular_matrix_product(
       }
     }
   }
-  
+  */
 
-  /*
+  
   size_type nrows_C = C.extent(0);
   size_type ncols_C = C.extent(1);
   size_type ncols_A = A.extent(1);
@@ -1390,10 +1387,10 @@ void triangular_matrix_product(
           std::plus <> (), 
           [=](auto col_a){
             if (col_c > row_c){  // this is lower_triangle so if col > row skip it
-              return;
+              return ElementType_C{};  // Bob check this 
             }
             else{
-              return A(row_c, cols_a) * B(cols_a, col_c);   // we are acessing the lower tirangular part of the matrix
+              return A(row_c, col_a) * B(col_a, col_c);   // we are acessing the lower tirangular part of the matrix
             }
           } 
         );
@@ -1413,18 +1410,16 @@ void triangular_matrix_product(
           std::plus <> (), 
           [=](auto col_a){
             if (row_c > col_c){  // this is lower_triangle so if col > row skip it
-              return;
+              return ElementType_C{};  // Bob check this 
             }
             else{
-            return A(row_c, cols_a) * B(cols_a, col_c);   // we are acessing the upper tirangular part of the matrix
+            return A(row_c, col_a) * B(col_a, col_c);   // we are acessing the upper tirangular part of the matrix
             }
           } 
         );
       });
     });
   }
-  */
-
 }
 
 template<class ExecutionPolicy,
@@ -1526,7 +1521,7 @@ void triangular_matrix_product(
   constexpr bool explicitDiagonal =
     std::is_same_v<DiagonalStorage, explicit_diagonal_t>;
 
-  
+  /*
   if constexpr (std::is_same_v<Triangle, lower_triangle_t>) {
     for (size_type j = 0; j < C.extent(1); ++j) {
       const size_type k_lower = explicitDiagonal ? j : j + 1;
@@ -1555,8 +1550,8 @@ void triangular_matrix_product(
       }
     }
   }
+  */
   
-  /*
   size_type nrows_C = C.extent(0);
   size_type ncols_C = C.extent(1);
   size_type ncols_A = A.extent(1);
@@ -1577,10 +1572,10 @@ void triangular_matrix_product(
           std::plus <> (), 
           [=](auto col_a){
             if (col_c > row_c){  // this is lower_triangle so if col > row skip it
-              return;
+              return ElementType_C{};  // Bob check this 
             }
             else{
-              return B(row_c, cols_a) * A(cols_a, col_c);   // we are acessing the lower tirangular part of the matrix
+              return B(row_c, col_a) * A(col_a, col_c);   // we are acessing the lower tirangular part of the matrix
             }
           } 
         );
@@ -1600,18 +1595,16 @@ void triangular_matrix_product(
           std::plus <> (), 
           [=](auto col_a){
             if (row_c > col_c){  // this is lower_triangle so if col > row skip it
-              return;
+              return ElementType_C{};  // Bob check this 
             }
             else{
-            return B(row_c, cols_a) * A(cols_a, col_c);   // we are acessing the upper tirangular part of the matrix
+            return B(row_c, col_a) * A(col_a, col_c);   // we are acessing the upper tirangular part of the matrix
             }
           } 
         );
       });
     });
   }
-  */
-
 }
 
 template<class ExecutionPolicy,
@@ -1706,7 +1699,7 @@ void triangular_matrix_left_product(
   constexpr bool explicitDiagonal =
     std::is_same_v<DiagonalStorage, explicit_diagonal_t>;
 
-  
+  /*
   if constexpr (std::is_same_v<Triangle, upper_triangle_t>) {
     for (size_type j=0; j < C.extent(1); ++j) {
       for (size_type k=0; k < C.extent(0); ++k) {
@@ -1731,9 +1724,9 @@ void triangular_matrix_left_product(
       }
     }
   }
-  
+  */
 
-  /*
+  
   size_type nrows_C = C.extent(0);
   size_type ncols_C = C.extent(1);
   size_type ncols_A = A.extent(1);
@@ -1747,13 +1740,14 @@ void triangular_matrix_left_product(
         C(row_c,col_c) = std::transform_reduce(
           std::execution::par,                 // Parallel execution policy
           cols_a.begin(), cols_a.end(),        // Range of the first vector
+          C(row_c,col_c),    // Initial value for accumulation
           std::plus <> (), 
           [=](auto col_a){
             if (col_c > row_c){  // this is lower_triangle so if col > row skip it
-              return;
+              return ElementType_C{};  // Bob check this
             }
             else{
-              return A(row_c, cols_a) * C(cols_a, col_c);   // we are acessing the lower tirangular part of the matrix
+              return A(row_c, col_a) * C(col_a, col_c);   // we are acessing the lower tirangular part of the matrix
             }
           } 
         );
@@ -1766,21 +1760,20 @@ void triangular_matrix_left_product(
         C(row_c,col_c) = std::transform_reduce(
           std::execution::par,                 // Parallel execution policy
           cols_a.begin(), cols_a.end(),        // Range of the first vector
+          C(row_c,col_c),    // Initial value for accumulation
           std::plus <> (), 
           [=](auto col_a){
             if (row_c > col_c){  // this is lower_triangle so if col > row skip it
-              return;
+              return ElementType_C{};  // Bob check this
             }
             else{
-            return A(row_c, cols_a) * C(cols_a, col_c);   // we are acessing the upper tirangular part of the matrix
+            return A(row_c, col_a) * C(col_a, col_c);   // we are acessing the upper tirangular part of the matrix
             }
           } 
         );
       });
     });
   }
-  */
-
 }
 
 template<class ExecutionPolicy,
