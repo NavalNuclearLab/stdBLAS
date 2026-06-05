@@ -142,6 +142,10 @@ namespace {
       }
     }
 
+    std::cout << "A before triangular_matrix_product:\n" << to_string(A, Triangle{}, Diagonal{}) << std::endl;
+    std::cout << "B before triangular_matrix_product:\n" << to_string(B) << std::endl;
+    std::cout << "C before triangular_matrix_product:\n" << to_string(C) << std::endl;
+
     // Check the non-overwriting version
     if(isLeft) {
       triangular_matrix_product(A, Triangle{}, Diagonal{}, B, C);
@@ -149,6 +153,11 @@ namespace {
     else {
       triangular_matrix_product(B, A, Triangle{}, Diagonal{}, C);
     }
+
+    std::cout << "A after triangular_matrix_product:\n" << to_string(A, Triangle{}, Diagonal{}) << std::endl;
+    std::cout << "B after triangular_matrix_product:\n" << to_string(B) << std::endl;
+    std::cout << "C after triangular_matrix_product:\n" << to_string(C) << std::endl;
+    std::cout << "GS:\n" << to_string(gs) << std::endl;
 
     for (ptrdiff_t j = 0; j < (isLeft?n:m); ++j) {
       for (ptrdiff_t i = 0; i < (isLeft?m:n); ++i) {

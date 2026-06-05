@@ -61,6 +61,8 @@ using MdSpan::layout_right_padded;
 
 using LinearAlgebra::upper_triangle_t;
 using LinearAlgebra::lower_triangle_t;
+using LinearAlgebra::implicit_unit_diagonal_t;
+using LinearAlgebra::explicit_diagonal_t;
 
 using dbl_vector_t = mdspan<double, extents<std::size_t, dynamic_extent>>;
 using cpx_vector_t = mdspan<std::complex<double>, extents<std::size_t, dynamic_extent>>;
@@ -99,8 +101,7 @@ template<class ElementType,
          class Accessor,
          class Triangle>
 std::string to_string( mdspan<ElementType, Extents, Layout, Accessor> x, 
-                       Triangle /* t */, 
-                       bool is_symmetric ) {
+                       Triangle /* t */) {
   std::stringstream ss;
   constexpr auto ndims = x.rank();
   constexpr bool lower_tri =
@@ -110,25 +111,13 @@ std::string to_string( mdspan<ElementType, Extents, Layout, Accessor> x,
       for(std::size_t j = 0; j < x.extent(1); ++j) {
         if constexpr(lower_tri) {
           if (j > i) {
-            if(is_symmetric){
-              ss << x(j, i);
-            }
-            else{
-              ss << "0 ";
-            }
-            ss << " ";
+            ss << x(j, i) << " ";
             continue;
           }
         }
         else {
           if (i > j) {
-            if(is_symmetric){
-              ss << x(j, i);
-            }
-            else{
-              ss << "0 ";
-            }
-            ss << " ";
+            ss << x(j, i) << " ";
             continue;
           }
         }
@@ -139,6 +128,52 @@ std::string to_string( mdspan<ElementType, Extents, Layout, Accessor> x,
   }
   else {
     printf("to_string(mdspan, Triangle): only implemented for rank 2\n");
+  }
+  return ss.str();
+}
+
+template<class ElementType,
+         class Extents,
+         class Layout,
+         class Accessor,
+         class Triangle,
+         class Diagonal>
+std::string to_string( mdspan<ElementType, Extents, Layout, Accessor> x, 
+                       Triangle /* t */, Diagonal /* d */) {
+  std::stringstream ss;
+  constexpr auto ndims = x.rank();
+  constexpr bool lower_tri =
+    std::is_same_v<Triangle, lower_triangle_t>;
+  constexpr bool implicit_unit_diag =
+    std::is_same_v<Diagonal, implicit_unit_diagonal_t>;
+  if constexpr(ndims == 2) {
+    for(std::size_t i = 0; i < x.extent(0); ++i) {
+      for(std::size_t j = 0; j < x.extent(1); ++j) {
+        if constexpr(implicit_unit_diag) {
+          if (i == j) {
+            ss << "1 ";
+            continue;
+          }
+        }
+        if constexpr(lower_tri) {
+          if (j > i) {
+            ss << "0 ";
+            continue;
+          }
+        }
+        else {
+          if (i > j) {
+            ss << "0 ";
+            continue;
+          }
+        }
+        ss << x(i, j) << " ";
+      }
+      ss << "\n";
+    }
+  }
+  else {
+    printf("to_string(mdspan, Triangle, Diagonal): only implemented for rank 2\n");
   }
   return ss.str();
 }
