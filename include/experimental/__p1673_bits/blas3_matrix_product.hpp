@@ -1129,65 +1129,36 @@ void triangular_matrix_product(
   mdspan<ElementType_C, extents<IndexType_C, numRows_C, numCols_C>, Layout_C, Accessor_C> C)
 {
   using size_type = ::std::common_type_t<IndexType_A, IndexType_B, IndexType_C>;
-  constexpr bool explicitDiagonal =
-    std::is_same_v<DiagonalStorage, explicit_diagonal_t>;
-
-  /* 
-  if constexpr (std::is_same_v<Triangle, lower_triangle_t>) {
-    for (size_type j = 0; j < C.extent(1); ++j) {
-      const size_type k_lower = explicitDiagonal ? j : j + 1;
-      for (size_type i = 0; i < C.extent(0); ++i) {
-        C(i,j) = ElementType_C{};
-        for (size_type k = k_lower; k < C.extent(1); ++k) {
-          C(i,j) += B(i,k) * A(k,j);
-        }
-        if constexpr (! explicitDiagonal) {
-          C(i,j) += B(i,j);   //1 times
-        }
-      }
-    }
-  }
-  else { // upper_triangle_t
-    for (size_type j = 0; j < C.extent(1); ++j) {
-      const ptrdiff_t k_upper = explicitDiagonal ? j : j - ptrdiff_t(1);
-      for (size_type i = 0; i < C.extent(0); ++i) {
-        C(i,j) = ElementType_C{};
-        for (ptrdiff_t k = 0; k <= k_upper; ++k) {
-          C(i,j) += B(i,k) * A(k,j);
-        }
-        if constexpr (! explicitDiagonal) {
-          C(i,j) += B(i,j);  //1 times
-        }
-      }
-    }
-  }
-  */
-  
+  constexpr bool implicitUnitDiagonal =
+    std::is_same_v<DiagonalStorage, implicit_unit_diagonal_t>;
 
   size_type nrows_C = C.extent(0);
   size_type ncols_C = C.extent(1);
-  size_type ncols_A = A.extent(1);
-  auto cols_a = std::ranges::iota_view{size_type(0), ncols_A};
+  size_type ncols_B = B.extent(1);
+  auto cols_b = std::ranges::iota_view{size_type(0), ncols_B};
   auto rows_c = std::ranges::iota_view{size_type(0), nrows_C};
   auto cols_c = std::ranges::iota_view{size_type(0), ncols_C};
 
   if constexpr (std::is_same_v<Triangle, lower_triangle_t>) {
     std::for_each(std::execution::par,rows_c.begin(), rows_c.end(), [=](size_type row_c) {
       std::for_each(std::execution::par,cols_c.begin(), cols_c.end(), [=](size_type col_c) {
-        C(row_c,col_c) = ElementType_C{};
-      
         // dot product of row and vector
         C(row_c,col_c) = std::transform_reduce(
           std::execution::par,                 // Parallel execution policy
-          cols_a.begin(), cols_a.end(),        // Range of the first vector
+          cols_b.begin(), cols_b.end(),        // Range of the first vector
           ElementType_C{},    // Initial value for accumulation
           std::plus <> (), 
-          [=](auto col_a){
-            if (col_c > row_c){  // this is lower_triangle so if col > row skip it
+          [=](auto col_b){
+            if constexpr (implicitUnitDiagonal) {
+              if (col_b == col_c){  // this is the diagonal element and we are assuming its value to be 1
+                return B(row_c, col_b);
+              }
+            }
+            if (col_b < col_c){  // this is lower_triangle so if col > row skip it
               return ElementType_C{};
             }
             else{
-              return B(row_c, col_a) * A(col_a, col_c);   // we are acessing the lower tirangular part of the matrix
+              return B(row_c, col_b) * A(col_b, col_c);   // we are acessing the lower tirangular part of the matrix
             }
           } 
         );
@@ -1197,20 +1168,23 @@ void triangular_matrix_product(
   else{
     std::for_each(std::execution::par,rows_c.begin(), rows_c.end(), [=](size_type row_c) {
       std::for_each(std::execution::par,cols_c.begin(), cols_c.end(), [=](size_type col_c) {
-        C(row_c,col_c) = ElementType_C{};
-      
         // dot product of row and vector
         C(row_c,col_c) = std::transform_reduce(
           std::execution::par,                 // Parallel execution policy
-          cols_a.begin(), cols_a.end(),        // Range of the first vector
+          cols_b.begin(), cols_b.end(),        // Range of the first vector
           ElementType_C{},    // Initial value for accumulation
           std::plus <> (), 
-          [=](auto col_a){
-            if (row_c > col_c){  // this is lower_triangle so if col > row skip it
+          [=](auto col_b){
+            if constexpr (implicitUnitDiagonal) {
+              if (col_b == col_c){  // this is the diagonal element and we are assuming its value to be 1
+                return B(row_c, col_b);
+              }
+            }
+            if (col_b > col_c){  // this is lower_triangle so if col > row skip it
               return ElementType_C{};
             }
             else{
-            return B(row_c, col_a) * A(col_a, col_c);   // we are acessing the upper tirangular part of the matrix
+              return B(row_c, col_b) * A(col_b, col_c);   // we are acessing the upper tirangular part of the matrix
             }
           } 
         );
@@ -1473,28 +1447,31 @@ void triangular_matrix_product(
   
   size_type nrows_C = C.extent(0);
   size_type ncols_C = C.extent(1);
-  size_type ncols_A = A.extent(1);
-  auto cols_a = std::ranges::iota_view{size_type(0), ncols_A};
+  size_type ncols_B = B.extent(1);
+  auto cols_b = std::ranges::iota_view{size_type(0), ncols_B};
   auto rows_c = std::ranges::iota_view{size_type(0), nrows_C};
   auto cols_c = std::ranges::iota_view{size_type(0), ncols_C};
   
   if constexpr (std::is_same_v<Triangle, lower_triangle_t>) {
     std::for_each(std::execution::par,rows_c.begin(), rows_c.end(), [=](size_type row_c) {
       std::for_each(std::execution::par,cols_c.begin(), cols_c.end(), [=](size_type col_c) {
-        C(row_c,col_c) = E(row_c,col_c);
-      
         // dot product of row and vector
         C(row_c,col_c) = std::transform_reduce(
           std::execution::par,                 // Parallel execution policy
-          cols_a.begin(), cols_a.end(),        // Range of the first vector
-          C(row_c,col_c),    // Initial value for accumulation
+          cols_b.begin(), cols_b.end(),        // Range of the first vector
+          E(row_c,col_c),    // Initial value for accumulation
           std::plus <> (), 
-          [=](auto col_a){
-            if (col_c > row_c){  // this is lower_triangle so if col > row skip it
+          [=](auto col_b){
+            if constexpr (implicitUnitDiagonal) {
+              if (col_b == col_c){  // this is the diagonal element and we are assuming its value to be 1
+                return B(row_c, col_b);
+              }
+            }
+            if (col_b < col_c){  // this is lower_triangle so if col > row skip it
               return ElementType_C{};  // Bob check this 
             }
             else{
-              return B(row_c, col_a) * A(col_a, col_c);   // we are acessing the lower tirangular part of the matrix
+              return B(row_c, col_b) * A(col_b, col_c);   // we are acessing the lower tirangular part of the matrix
             }
           } 
         );
@@ -1504,20 +1481,23 @@ void triangular_matrix_product(
   else{
     std::for_each(std::execution::par,rows_c.begin(), rows_c.end(), [=](size_type row_c) {
       std::for_each(std::execution::par,cols_c.begin(), cols_c.end(), [=](size_type col_c) {
-        C(row_c,col_c) = E(row_c,col_c);
-      
         // dot product of row and vector
         C(row_c,col_c) = std::transform_reduce(
           std::execution::par,                 // Parallel execution policy
-          cols_a.begin(), cols_a.end(),        // Range of the first vector
-          C(row_c,col_c),    // Initial value for accumulation
+          cols_b.begin(), cols_b.end(),        // Range of the first vector
+          E(row_c,col_c),    // Initial value for accumulation
           std::plus <> (), 
-          [=](auto col_a){
-            if (row_c > col_c){  // this is lower_triangle so if col > row skip it
+          [=](auto col_b){
+            if constexpr (implicitUnitDiagonal) {
+              if (col_b == col_c){  // this is the diagonal element and we are assuming its value to be 1
+                return B(row_c, col_b);
+              }
+            }
+            if (col_b > col_c){  // this is upper_triangle so if col < row skip it
               return ElementType_C{};  // Bob check this 
             }
             else{
-            return B(row_c, col_a) * A(col_a, col_c);   // we are acessing the upper tirangular part of the matrix
+              return B(row_c, col_b) * A(col_b, col_c);   // we are acessing the upper tirangular part of the matrix
             }
           } 
         );
@@ -1745,61 +1725,35 @@ void triangular_matrix_right_product(
   mdspan<ElementType_C, extents<IndexType_C, numRows_C, numCols_C>, Layout_C, Accessor_C> C)
 {
   using size_type = ::std::common_type_t<IndexType_A, IndexType_C>;
-  constexpr bool explicitDiagonal =
-    std::is_same_v<DiagonalStorage, explicit_diagonal_t>;
+  constexpr bool implicitUnitDiagonal =
+    std::is_same_v<DiagonalStorage, implicit_unit_diagonal_t>;
 
-  
-  if constexpr (std::is_same_v<Triangle, upper_triangle_t>) {
-    for (size_type j=C.extent(1); j > 0; --j) {
-      if constexpr (explicitDiagonal) {
-        for(size_type i=0; i < C.extent(0); ++i) {
-          C(i,j-1) = C(i,j-1) * A(j-1,j-1);
-        }
-      }
-      for (size_type k=0; k < j-1; k++) {
-        for(size_type i=0; i < C.extent(0); ++i) {
-          C(i,j-1) += C(i,k) * A(k,j-1);
-        }
-      }
-    }
-  }
-  else { // lower_triangle_t
-    for (size_type j=0; j < C.extent(1); ++j) {
-      if constexpr (explicitDiagonal) {
-        for (size_type i=0; i < C.extent(0); ++i) {
-          C(i,j) = C(i,j) * A(j,j);
-        }
-      }
-      for (size_type k=j+1; k < C.extent(1); ++k) {
-        for (size_type i=0; i < C.extent(0); i++) {
-          C(i,j) += C(i,k) * A(k,j);
-        }
-      }
-    }
-  }
-  
-
-  /*
   size_type nrows_C = C.extent(0);
   size_type ncols_C = C.extent(1);
-  size_type ncols_A = A.extent(1);
-  auto cols_a = std::ranges::iota_view{size_type(0), ncols_A};
+  size_type nrows_A = A.extent(1);
+  auto rows_a = std::ranges::iota_view{size_type(0), nrows_A};
   auto rows_c = std::ranges::iota_view{size_type(0), nrows_C};
-  auto cols_c = std::ranges::iota_view{size_type(0), ncols_C};
 
   if constexpr (std::is_same_v<Triangle, lower_triangle_t>) {
+    auto cols_c = std::ranges::iota_view{size_type(0), ncols_C};
     std::for_each(std::execution::par,rows_c.begin(), rows_c.end(), [=](size_type row_c) {
-      std::for_each(std::execution::par,cols_c.begin(), cols_c.end(), [=](size_type col_c) {
+      std::for_each(cols_c.begin(), cols_c.end(), [=](size_type col_c) {
         C(row_c,col_c) = std::transform_reduce(
           std::execution::par,                 // Parallel execution policy
-          cols_a.begin(), cols_a.end(),        // Range of the first vector
+          rows_a.begin(), rows_a.end(),        // Range of the first vector
+          ElementType_C{},    // Initial value for accumulation
           std::plus <> (), 
-          [=](auto col_a){
-            if (col_c > row_c){  // this is lower_triangle so if col > row skip it
-              return;
+          [=](auto row_a){
+            if constexpr (implicitUnitDiagonal) {
+              if (row_a == col_c){  // this is the diagonal element and we are assuming its value to be 1
+                return C(row_c, row_a);
+              }
+            }
+            if (col_c > row_a){  // this is lower_triangle so if col > row skip it
+              return ElementType_C{};
             }
             else{
-              return C(row_c, cols_a) * A(cols_a, col_c);   // we are acessing the lower tirangular part of the matrix
+              return C(row_c, row_a) * A(row_a, col_c);   // we are acessing the lower tirangular part of the matrix
             }
           } 
         );
@@ -1807,26 +1761,31 @@ void triangular_matrix_right_product(
     });
   }
   else{
+    auto cols_c = std::ranges::iota_view{size_type(0), ncols_C} | std::views::reverse;
     std::for_each(std::execution::par,rows_c.begin(), rows_c.end(), [=](size_type row_c) {
-      std::for_each(std::execution::par,cols_c.begin(), cols_c.end(), [=](size_type col_c) {
+      std::for_each(cols_c.begin(), cols_c.end(), [=](size_type col_c) {
         C(row_c,col_c) = std::transform_reduce(
           std::execution::par,                 // Parallel execution policy
-          cols_a.begin(), cols_a.end(),        // Range of the first vector
+          rows_a.begin(), rows_a.end(),        // Range of the first vector
+          ElementType_C{},    // Initial value for accumulation
           std::plus <> (), 
-          [=](auto col_a){
-            if (row_c > col_c){  // this is lower_triangle so if col > row skip it
-              return;
+          [=](auto row_a){
+            if constexpr (implicitUnitDiagonal) {
+              if (row_a == col_c){  // this is the diagonal element and we are assuming its value to be 1
+                return C(row_c, row_a);
+              }
+            }
+            if (col_c < row_a){  // this is lower_triangle so if col > row skip it
+              return ElementType_C{};
             }
             else{
-            return C(row_c, cols_a) * A(cols_a, col_c);   // we are acessing the upper tirangular part of the matrix
+              return C(row_c, row_a) * A(row_a, col_c);   // we are acessing the upper tirangular part of the matrix
             }
           } 
         );
       });
     });
   }
-  */
-  
 }
 
 
