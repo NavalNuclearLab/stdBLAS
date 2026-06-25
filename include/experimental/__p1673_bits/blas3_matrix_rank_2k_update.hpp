@@ -125,6 +125,7 @@ void symmetric_matrix_rank_2k_update(
     std::is_same_v<Triangle, lower_triangle_t>;
   using size_type = ::std::common_type_t<SizeType_A, SizeType_B, SizeType_C>;
 
+  /*
   for (size_type j = 0; j < C.extent(1); ++j) {
     const size_type i_lower = lower_tri ? j : size_type(0);
     const size_type i_upper = lower_tri ? C.extent(0) : j+1;
@@ -135,6 +136,42 @@ void symmetric_matrix_rank_2k_update(
       }
     }
   }
+  */
+
+  size_type n = A.extent(0);
+  size_type k = A.extent(1);
+  auto cols = std::ranges::iota_view{size_type(0), n};
+
+  //for (size_type row_c = 0; row_c < nrows_C; ++row_c) {
+  auto rows = std::ranges::iota_view{size_type(0), n};
+  auto inner_dim = std::ranges::iota_view{size_type(0), k};
+  std::for_each(std::execution::par,rows.begin(), rows.end(), [=](size_type row) {
+  
+    //for (size_type col_c = 0; col_c < ncols_C; ++col_c) {
+    std::for_each(std::execution::par,cols.begin(), cols.end(), [=](size_type col) {
+      if (lower_tri && col > row){
+        return;
+      }
+      if (!lower_tri && row > col){
+        return;
+      }   
+
+#if defined(LINALG_FIX_RANK_UPDATES)
+      C(row, col) = ElementType_C{};
+#endif
+      // dot product of row and vector
+      C(row,col) = std::transform_reduce(
+        std::execution::par,           // Parallel execution policy
+        inner_dim.begin(), inner_dim.end(),          // Range of the first vector
+        ElementType_C{},                              // Initial value for accumulation
+        std::plus <> (), 
+        [=](auto inner_index){
+          return A(row,inner_index)*B(col,inner_index) + B(row,inner_index)*A(col,inner_index);
+    // C(i,j) += A(i, k)           *B(j, k)            + B(i, k)           *A(j, k);
+        }
+      );
+    });
+  });
 }
 
 template<class ExecutionPolicy,
@@ -224,6 +261,7 @@ void symmetric_matrix_rank_2k_update(
     std::is_same_v<Triangle, lower_triangle_t>;
   using size_type = ::std::common_type_t<SizeType_A, SizeType_B, SizeType_C>;
 
+  /*
   for (size_type j = 0; j < C.extent(1); ++j) {
     const size_type i_lower = lower_tri ? j : size_type(0);
     const size_type i_upper = lower_tri ? C.extent(0) : j+1;
@@ -234,6 +272,41 @@ void symmetric_matrix_rank_2k_update(
       }
     }
   }
+  */
+
+  size_type nrows_C = C.extent(0);
+  size_type ncols_C = C.extent(1);
+  size_type ncols_A = A.extent(1);
+  auto cols_a = std::ranges::iota_view{size_type(0), ncols_A};
+  auto rows_c = std::ranges::iota_view{size_type(0), nrows_C};
+  auto cols_c = std::ranges::iota_view{size_type(0), ncols_C};
+
+  std::for_each(std::execution::par,rows_c.begin(), rows_c.end(), [=](size_type row_c) {
+    auto cols_c = std::ranges::iota_view{size_type(0), ncols_C};
+    std::for_each(std::execution::par,cols_c.begin(), cols_c.end(), [=](size_type col_c) {
+
+      if (lower_tri && col_c > row_c){
+        return;
+      }
+      if (!lower_tri && row_c > col_c){
+        return;
+      }   
+
+      C(row_c,col_c) = E(row_c,col_c);
+
+      // dot product of row and vector
+      C(row_c,col_c) = std::transform_reduce(
+        std::execution::par,           // Parallel execution policy
+        cols_a.begin(), cols_a.end(),          // Range of the first vector
+        C(row_c,col_c),                              // Initial value for accumulation
+        std::plus <> (), 
+        [=](auto col_a){
+          return A(row_c, col_a) * B(col_c, col_a) + B(row_c, col_a) * A(col_c, col_a);
+    // C(i,j) += A(i, k)         * B(j, k)         + B(i, k)         * A(j, k);
+        }
+      );
+    });
+  }); 
 }
 
 template<class ExecutionPolicy,
@@ -326,6 +399,7 @@ void hermitian_matrix_rank_2k_update(
     std::is_same_v<Triangle, lower_triangle_t>;
   using size_type = ::std::common_type_t<SizeType_A, SizeType_B, SizeType_C>;
 
+  /*
   for (size_type j = 0; j < C.extent(1); ++j) {
     const size_type i_lower = lower_tri ? j : size_type(0);
     const size_type i_upper = lower_tri ? C.extent(0) : j+1;
@@ -336,6 +410,40 @@ void hermitian_matrix_rank_2k_update(
       }
     }
   }
+  */
+
+  size_type nrows_C = C.extent(0);
+  size_type ncols_C = C.extent(1);
+  size_type ncols_A = A.extent(1);
+  auto cols_a = std::ranges::iota_view{size_type(0), ncols_A};
+  auto rows_c = std::ranges::iota_view{size_type(0), nrows_C};
+  auto cols_c = std::ranges::iota_view{size_type(0), ncols_C};
+
+  std::for_each(std::execution::par,rows_c.begin(), rows_c.end(), [=](size_type row_c) {
+
+#if !defined(LINALG_FIX_RANK_UPDATES)
+    C(row_c,row_c) = impl::real_if_needed(C(row_c,row_c));
+#endif
+
+    auto cols_c = std::ranges::iota_view{size_type(0), ncols_C};
+    std::for_each(std::execution::par,cols_c.begin(), cols_c.end(), [=](size_type col_c) {
+
+#if defined(LINALG_FIX_RANK_UPDATES)
+      C(row_c,col_c) = ElementType_C{};
+#endif
+
+      // dot product of row and vector
+      C(row_c,col_c) = std::transform_reduce(
+        std::execution::par,           // Parallel execution policy
+        cols_a.begin(), cols_a.end(),          // Range of the first vector
+        ElementType_C{},                              // Initial value for accumulation
+        std::plus <> (), 
+        [=](auto col_a){
+          return A(row_c,col_a) * impl::conj_if_needed(B(col_c,col_a)) + B(row_c,col_a) * impl::conj_if_needed(A(col_c,col_a));
+        }
+      );
+    });
+  });
 }
 
 template<class ExecutionPolicy,
@@ -425,6 +533,7 @@ void hermitian_matrix_rank_2k_update(
     std::is_same_v<Triangle, lower_triangle_t>;
   using size_type = ::std::common_type_t<SizeType_A, SizeType_B, SizeType_C>;
 
+  /*
   for (size_type j = 0; j < C.extent(1); ++j) {
     const size_type i_lower = lower_tri ? j : size_type(0);
     const size_type i_upper = lower_tri ? C.extent(0) : j+1;
@@ -435,6 +544,40 @@ void hermitian_matrix_rank_2k_update(
       }
     }
   }
+  */
+
+  size_type nrows_C = C.extent(0);
+  size_type ncols_C = C.extent(1);
+  size_type ncols_A = A.extent(1);
+  auto cols_a = std::ranges::iota_view{size_type(0), ncols_A};
+  auto rows_c = std::ranges::iota_view{size_type(0), nrows_C};
+  auto cols_c = std::ranges::iota_view{size_type(0), ncols_C};
+
+  std::for_each(std::execution::par,rows_c.begin(), rows_c.end(), [=](size_type row_c) {
+
+#if !defined(LINALG_FIX_RANK_UPDATES)
+    C(row_c,row_c) = impl::real_if_needed(C(row_c,row_c));
+#endif
+
+    auto cols_c = std::ranges::iota_view{size_type(0), ncols_C};
+    std::for_each(std::execution::par,cols_c.begin(), cols_c.end(), [=](size_type col_c) {
+
+#if defined(LINALG_FIX_RANK_UPDATES)
+      C(row_c,col_c) = ElementType_C{};
+#endif
+
+      // dot product of row and vector
+      C(row_c,col_c) = std::transform_reduce(
+        std::execution::par,           // Parallel execution policy
+        cols_a.begin(), cols_a.end(),          // Range of the first vector
+        ElementType_C{},                              // Initial value for accumulation
+        std::plus <> (), 
+        [=](auto col_a){
+          return A(row_c,col_a) * impl::conj_if_needed(B(col_c,col_a)) + B(row_c,col_a) * impl::conj_if_needed(A(col_c,col_a));
+        }
+      );
+    });
+  });
 }
 
 template<class ExecutionPolicy,
