@@ -40,7 +40,9 @@ jobs:
         run: cmake --build build -j
 
       - name: Run tests (gtest)
+        id: tests
         working-directory: build
+        continue-on-error: true
         run: |
           ctest --output-on-failure
 
@@ -92,3 +94,7 @@ jobs:
           flags: cxx${{ matrix.std }}
           name: stdBLAS-${{ matrix.std }}
           token: ${{ secrets.CODECOV_TOKEN }}
+
+      - name: Fail if tests failed
+        if: steps.tests.outcome == 'failure'
+        run: exit 1
