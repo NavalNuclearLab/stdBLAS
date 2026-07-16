@@ -754,7 +754,6 @@ void matrix_product(
     }
     */
     
-
     size_type nrows_C = C.extent(0);
     size_type ncols_C = C.extent(1);
     size_type ncols_A = A.extent(1);
@@ -1885,9 +1884,10 @@ void symmetric_matrix_product(
       }
     }
   }
+
   
 
-  /*
+  /*  
   size_type nrows_C = C.extent(0);
   size_type ncols_C = C.extent(1);
   size_type ncols_A = A.extent(1);
@@ -1912,6 +1912,7 @@ void symmetric_matrix_product(
             }
             else{
               return B(row_c, cols_a) * A(cols_a, col_c);   // we are acessing the lower tirangular part of the matrix
+
             }
           } 
         );
