@@ -202,7 +202,7 @@ void trsm_upper_triangular_right_side(
   }
   */
   
-
+  
   for (size_type rowB = 0; rowB < B_num_rows; ++rowB) {
     for (size_type colA = 0; colA < A_num_cols; ++colA) {
       using sum_type = decltype (B(rowB,colA) - A(0,0) * X(0,0));
@@ -276,7 +276,7 @@ void trsm_lower_triangular_right_side(
 
 
   for (size_type rowB = 0; rowB < B_num_rows; ++rowB) {
-    for (size_type colA = 0; colA < A_num_cols; ++colA) {
+    for (signed_index_type colA = A_num_cols -1; colA >=0; --colA) {
       using sum_type = decltype (B(rowB,colA) - A(0,0) * X(0,0));
 
       const size_type A_num_rows = A.extent(0);
