@@ -256,7 +256,7 @@ void trsm_lower_triangular_right_side(
   const size_type A_num_rows = A.extent(0);
   const signed_index_type A_num_cols = A.extent(1);
 
-  /*
+  
   for (size_type i = 0; i < B_num_rows; ++i) {
     for (signed_index_type j = A_num_cols - 1; j >= 0; --j) {
       using sum_type = decltype (B(i,j) - A(0,0) * X(0,0));
@@ -272,9 +272,9 @@ void trsm_lower_triangular_right_side(
       }
     }
   }
-  */
+  
 
-
+  /*
   for (size_type rowB = 0; rowB < B_num_rows; ++rowB) {
     for (signed_index_type colA = A_num_cols -1; colA >=0; --colA) {
       using sum_type = decltype (B(rowB,colA) - A(0,0) * X(0,0));
@@ -306,7 +306,9 @@ void trsm_lower_triangular_right_side(
       }
     }
   }
+  */
 }
+
 
 template <class Exec, class A_t, class Tri_t, class D_t, class B_t, class X_t, class = void>
 struct is_custom_tri_matrix_matrix_left_solve_avail : std::false_type {};

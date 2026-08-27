@@ -64,7 +64,13 @@ namespace {
     using LinearAlgebra::lower_triangle;
     using LinearAlgebra::right_side;
     using LinearAlgebra::triangular_matrix_matrix_solve;
+
+    std::cout << "A\n" << to_string(A, lower_triangle, explicit_diagonal) << std::endl;
+    std::cout << "B\n" << to_string(B) << std::endl;
+
     triangular_matrix_matrix_solve(A, lower_triangle, explicit_diagonal, right_side, B, X);
+
+    std::cout << "X\n" << to_string(X) << std::endl;
 
     mdspan<const double, dextents<IndexType, 2>, layout_right>
       B_times_inv_A(storage_B_times_inv_A, num_rows_B, num_cols_A);
