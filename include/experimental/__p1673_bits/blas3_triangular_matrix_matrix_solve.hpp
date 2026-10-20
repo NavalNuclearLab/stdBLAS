@@ -105,7 +105,7 @@ void trsm_lower_triangular_left_side(
   const size_type A_num_rows = A.extent(0);
   const size_type B_num_cols = B.extent(1);
 
-  /*
+  
   for (size_type k = 0; k < B_num_cols; ++k) {
     for (size_type i = 0; i < A_num_rows; ++i) {
       // TODO this would be a great opportunity for an implementer to
@@ -123,13 +123,14 @@ void trsm_lower_triangular_left_side(
       }
     }
   }
-  */
+  
 
   /*
   for (size_type rowB = 0; rowB < B_num_cols; ++rowB) {
     for (size_type colA = 0; colA < A_num_rows; ++colA) {
   */
 
+  /*
   auto rowsB = std::ranges::iota_view{size_type(0), B_num_cols};
   auto colsA = std::ranges::iota_view{size_type(0), A_num_rows};
 
@@ -163,6 +164,9 @@ void trsm_lower_triangular_left_side(
       }
     });
   });
+
+  */
+
 }
 
 template<

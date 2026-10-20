@@ -1905,7 +1905,7 @@ void symmetric_matrix_product(
           ElementType_C{},    // Initial value for accumulation
           std::plus <> (), 
           [=](auto col_a){
-            if (col_c > row_c){  
+            if (row_c < col_a){  
               return A(col_a, row_c) * B(col_a, col_c); // we are acessing the upper tirangular part of the matrix
             }
             else{
@@ -1928,7 +1928,7 @@ void symmetric_matrix_product(
           ElementType_C{},    // Initial value for accumulation
           std::plus <> (), 
           [=](auto col_a){
-            if (row_c > col_c){  // this is lower_triangle so if col > row skip it
+            if (row_c > col_a){  // this is lower_triangle so if col > row skip it
             return A(col_a, row_c) * B(col_a, col_c);    // we are acessing the lower tirangular part of the matrix
             }
             else{
@@ -2063,12 +2063,12 @@ void symmetric_matrix_product(
           cols_a.begin(), cols_a.end(),        // Range of the first vector
           ElementType_C{},    // Initial value for accumulation
           std::plus <> (), 
-          [=](auto col_a){
-            if (row_c > col_c){  
-              return B(row_c, col_a) * A(col_a, col_c)   ; // we are acessing the lower tirangular part of the matrix
+          [=](auto row_a){
+            if (row_a < col_c){  
+              return B(row_c, row_a) * A(col_c, row_a)   ; // we are acessing the upper tirangular part of the matrix
             }
             else{
-              return B(row_c, col_a) * A(col_c, col_a);   // we are acessing the upper tirangular part of the matrix
+              return B(row_c, row_a) * A(row_a, col_c);   // we are acessing the lower tirangular part of the matrix
             }
           } 
         );
@@ -2086,12 +2086,12 @@ void symmetric_matrix_product(
           cols_a.begin(), cols_a.end(),        // Range of the first vector
           ElementType_C{},    // Initial value for accumulation
           std::plus <> (), 
-          [=](auto col_a){
-            if (col_c > row_c){  // this is lower_triangle so if col > row skip it
-            return B(row_c, col_a) * A(col_a, col_c);    // we are acessing the upper tirangular part of the matrix
+          [=](auto row_a){
+            if (row_a > row_c){  // this is lower_triangle so if col > row skip it
+            return B(row_c, row_a) * A(col_c, row_a);    // we are acessing the upper tirangular part of the matrix
             }
             else{
-            return B(row_c, col_a) * A(col_c, col_a);   // we are acessing the upper lower part of the matrix
+            return B(row_c, row_a) * A(row_a, col_c);   // we are acessing the upper lower part of the matrix
             }
           } 
         );
@@ -2728,7 +2728,6 @@ void hermitian_matrix_product(
   }
   */
 
-  
   size_type nrows_C = C.extent(0);
   size_type ncols_C = C.extent(1);
   size_type ncols_A = A.extent(1);
@@ -2781,7 +2780,7 @@ void hermitian_matrix_product(
         ); 
       });
     });
-  } 
+  }
 }
 
 template<class ExecutionPolicy,
@@ -2868,7 +2867,7 @@ void hermitian_matrix_product(
 {
   using size_type = ::std::common_type_t<IndexType_A, IndexType_B, IndexType_C>;
 
-
+  /*
   if constexpr (std::is_same_v<Triangle, lower_triangle_t>) {
     for (size_type j = 0; j < C.extent(1); ++j) {
       for (size_type i = 0; i < C.extent(0); ++i) {
@@ -2897,9 +2896,8 @@ void hermitian_matrix_product(
       }
     }
   }
+  */
 
-
-  /*
   size_type nrows_C = C.extent(0);
   size_type ncols_C = C.extent(1);
   size_type ncols_A = A.extent(1);
@@ -2910,7 +2908,7 @@ void hermitian_matrix_product(
   if constexpr (std::is_same_v<Triangle, lower_triangle_t>) {
     std::for_each(std::execution::par,rows_c.begin(), rows_c.end(), [=](size_type row_c) {
       std::for_each(std::execution::par,cols_c.begin(), cols_c.end(), [=](size_type col_c) {
-        C(row_c,col_c) = E(row_c,col_c);
+        C(row_c,col_c) = ElementType_C{};
       
         // dot product of row and vector
         C(row_c,col_c) = std::transform_reduce(
@@ -2919,12 +2917,12 @@ void hermitian_matrix_product(
           ElementType_C{},    // Initial value for accumulation
           std::plus <> (), [=](auto col_a){
           if (col_c > row_c){  
-            return impl::real_if_needed(A(row_c,col_a)) * B(col_a, col_c); // we are acessing the upper tirangular part of the matrix
+            return impl::conj_if_needed(A(row_c,col_a)) * B(col_a, col_c); // we are acessing the upper tirangular part of the matrix
           }
           else if (row_c > col_c){
             return A(row_c,col_a) * B(col_a, col_c);   // we are acessing the lower tirangular part of the matrix
           }
-          return impl::conj_if_needed(A(row_c,col_a)) * B(col_a, col_c);          
+          return ElementType_C{impl::real_if_needed(A(row_c,col_a)) * B(col_a, col_c)};          
           }
         ); 
       });
@@ -2933,13 +2931,13 @@ void hermitian_matrix_product(
   else{  // this is the upper traingular case
     std::for_each(std::execution::par,rows_c.begin(), rows_c.end(), [=](size_type row_c) {
       std::for_each(std::execution::par,cols_c.begin(), cols_c.end(), [=](size_type col_c) {
-        C(row_c,col_c) = E(row_c,col_c);
+        C(row_c,col_c) = ElementType_C{};
       
         // dot product of row and vector
         C(row_c,col_c) = std::transform_reduce(
           std::execution::par,                 // Parallel execution policy
           cols_a.begin(), cols_a.end(),        // Range of the first vector
-          C(row_c,col_c),    // Initial value for accumulation
+          ElementType_C{},    // Initial value for accumulation
           std::plus <> (), [=](auto col_a){
           if (row_c > col_c){    
             return impl::conj_if_needed(A(row_c,col_a)) * B(col_a, col_c);    // we are acessing the lower tirangular part of the matrix
@@ -2947,13 +2945,12 @@ void hermitian_matrix_product(
           else if (col_c > row_c){
             return A(row_c,col_a) * B(col_a, col_c);   // we are acessing the upper tirangular part of the matrix
           }
-          return impl::real_if_needed(A(row_c,col_a)) * B(col_a, col_c);          
+          return ElementType_C{impl::real_if_needed(A(row_c,col_a)) * B(col_a, col_c)};          
           }
         ); 
       });
     });
-  };
-  */
+  }
 }
 
 template<class ExecutionPolicy,
@@ -3049,7 +3046,7 @@ void hermitian_matrix_product(
 {
   using size_type = ::std::common_type_t<IndexType_A, IndexType_B, IndexType_C>;
 
-
+  /*
   if constexpr (std::is_same_v<Triangle, lower_triangle_t>) {
     for (size_type j = 0; j < C.extent(1); ++j) {
       for (size_type i = 0; i < C.extent(0); ++i) {
@@ -3078,9 +3075,9 @@ void hermitian_matrix_product(
       }
     }
   }
+  */
 
 
-  /*
   size_type nrows_C = C.extent(0);
   size_type ncols_C = C.extent(1);
   size_type ncols_A = A.extent(1);
@@ -3091,13 +3088,13 @@ void hermitian_matrix_product(
   if constexpr (std::is_same_v<Triangle, lower_triangle_t>) {
     std::for_each(std::execution::par,rows_c.begin(), rows_c.end(), [=](size_type row_c) {
       std::for_each(std::execution::par,cols_c.begin(), cols_c.end(), [=](size_type col_c) {
-        C(row_c,col_c) = E(row_c,col_c);
+        C(row_c,col_c) = ElementType_C{};
       
         // dot product of row and vector
         C(row_c,col_c) = std::transform_reduce(
           std::execution::par,                 // Parallel execution policy
           cols_a.begin(), cols_a.end(),        // Range of the first vector
-          C(row_c,col_c),    // Initial value for accumulation
+          ElementType_C{},    // Initial value for accumulation
           std::plus <> (), [=](auto col_a){
           if (col_c > row_c){  
             return impl::conj_if_needed(A(row_c,col_a)) * B(col_a, col_c); // we are acessing the upper tirangular part of the matrix
@@ -3105,7 +3102,7 @@ void hermitian_matrix_product(
           else if (row_c > col_c){
             return A(row_c,col_a) * B(col_a, col_c);   // we are acessing the lower tirangular part of the matrix
           }
-          return impl::real_if_needed(A(row_c,col_a)) * B(col_a, col_c);          
+          return ElementType_C{impl::real_if_needed(A(row_c,col_a)) * B(col_a, col_c)};          
           }
         ); 
       });
@@ -3114,13 +3111,13 @@ void hermitian_matrix_product(
   else{  // this is the upper traingular case
     std::for_each(std::execution::par,rows_c.begin(), rows_c.end(), [=](size_type row_c) {
       std::for_each(std::execution::par,cols_c.begin(), cols_c.end(), [=](size_type col_c) {
-        C(row_c,col_c) = E(row_c,col_c);
+        C(row_c,col_c) = ElementType_C{};
       
         // dot product of row and vector
         C(row_c,col_c) = std::transform_reduce(
           std::execution::par,                 // Parallel execution policy
           cols_a.begin(), cols_a.end(),        // Range of the first vector
-          C(row_c,col_c),    // Initial value for accumulation
+          ElementType_C{},    // Initial value for accumulation
           std::plus <> (), [=](auto col_a){
           if (row_c > col_c){    
             return impl::conj_if_needed(A(row_c,col_a)) * B(col_a, col_c);    // we are acessing the lower tirangular part of the matrix
@@ -3128,14 +3125,12 @@ void hermitian_matrix_product(
           else if (col_c > row_c){
             return A(row_c,col_a) * B(col_a, col_c);   // we are acessing the upper tirangular part of the matrix
           }
-          return impl::real_if_needed(A(row_c,col_a)) * B(col_a, col_c);          
+          return ElementType_C{impl::real_if_needed(A(row_c,col_a)) * B(col_a, col_c)};          
           }
         ); 
       });
     });
-  };
-  */
-
+  }
 }
 
 template<class ExecutionPolicy,
