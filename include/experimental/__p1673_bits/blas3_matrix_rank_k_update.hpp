@@ -195,7 +195,7 @@ void symmetric_matrix_rank_k_update(
   using size_type = std::common_type_t<SizeType_A, SizeType_C>;
 
 
-  /*
+  
   for (size_type j = 0; j < C.extent(1); ++j) {
     const size_type i_lower = lower_tri ? j : size_type(0);
     const size_type i_upper = lower_tri ? C.extent(0) : j+1;
@@ -206,8 +206,9 @@ void symmetric_matrix_rank_k_update(
       }
     }
   }
-  */
+  
 
+  /*    put back
   size_type r = A.extent(0);
   size_type c = A.extent(1);
   auto cols = std::ranges::iota_view{size_type(0), c};
@@ -238,6 +239,9 @@ void symmetric_matrix_rank_k_update(
       );
     });
   });
+
+  */
+
 }
 
 MDSPAN_TEMPLATE_REQUIRES(
@@ -459,7 +463,7 @@ void symmetric_matrix_rank_k_update(
     std::is_same_v<Triangle, lower_triangle_t>;
   using size_type = std::common_type_t<SizeType_A, SizeType_C>;
 
-  /*
+  
   for (size_type j = 0; j < C.extent(1); ++j) {
     const size_type i_lower = lower_tri ? j : size_type(0);
     const size_type i_upper = lower_tri ? C.extent(0) : j+1;
@@ -470,8 +474,9 @@ void symmetric_matrix_rank_k_update(
       }
     }
   }
-  */
+  
 
+  /*    put back
   size_type r = A.extent(0);
   size_type c = A.extent(1);
   auto cols = std::ranges::iota_view{size_type(0), c};
@@ -498,6 +503,8 @@ void symmetric_matrix_rank_k_update(
       );
     });
   });
+  */
+  
 }
 
 MDSPAN_TEMPLATE_REQUIRES(

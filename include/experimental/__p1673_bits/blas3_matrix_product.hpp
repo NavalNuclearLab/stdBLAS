@@ -1861,7 +1861,7 @@ void symmetric_matrix_product(
 {
   using size_type = ::std::common_type_t<IndexType_A, IndexType_B, IndexType_C>;
 
-  /*
+  
   if constexpr (std::is_same_v<Triangle, lower_triangle_t>) {
     for (size_type j = 0; j < C.extent(1); ++j) {
       for (size_type i = 0; i < C.extent(0); ++i) {
@@ -1883,9 +1883,10 @@ void symmetric_matrix_product(
         }
       }
     }
-  }
-  */
+  } 
   
+  
+  /*    put back
   size_type nrows_C = C.extent(0);
   size_type ncols_C = C.extent(1);
   size_type ncols_A = A.extent(1);
@@ -1939,6 +1940,8 @@ void symmetric_matrix_product(
       });
     });
   }
+  */
+
 }
 
 template<class ExecutionPolicy,
@@ -2020,7 +2023,7 @@ void symmetric_matrix_product(
 {
   using size_type = ::std::common_type_t<IndexType_A, IndexType_B, IndexType_C>;
 
-  /*
+  
   if constexpr (std::is_same_v<Triangle, lower_triangle_t>) {
     for (size_type j = 0; j < C.extent(1); ++j) {
       for (size_type i = 0; i < C.extent(0); ++i) {
@@ -2043,8 +2046,9 @@ void symmetric_matrix_product(
       }
     }
   }
-  */
   
+  
+  /*    put back
   size_type nrows_C = C.extent(0);
   size_type ncols_C = C.extent(1);
   size_type ncols_A = A.extent(1);
@@ -2087,7 +2091,7 @@ void symmetric_matrix_product(
           ElementType_C{},    // Initial value for accumulation
           std::plus <> (), 
           [=](auto row_a){
-            if (row_a > row_c){  // this is lower_triangle so if col > row skip it
+            if (row_a > col_c){  // this is lower_triangle so if col > row skip it
             return B(row_c, row_a) * A(col_c, row_a);    // we are acessing the upper tirangular part of the matrix
             }
             else{
@@ -2098,6 +2102,8 @@ void symmetric_matrix_product(
       });
     });
   }
+  */
+
 }
 
 template<class ExecutionPolicy,
@@ -2184,7 +2190,7 @@ void symmetric_matrix_product(
 {
   using size_type = ::std::common_type_t<IndexType_A, IndexType_B, IndexType_C>;
 
-  /*
+  
   if constexpr (std::is_same_v<Triangle, lower_triangle_t>) {
     for (size_type j = 0; j < C.extent(1); ++j) {
       for (size_type i = 0; i < C.extent(0); ++i) {
@@ -2207,9 +2213,10 @@ void symmetric_matrix_product(
       }
     }
   }
-  */
-
   
+  
+
+  /*    put back
   size_type nrows_C = C.extent(0);
   size_type ncols_C = C.extent(1);
   size_type ncols_A = A.extent(1);
@@ -2229,11 +2236,11 @@ void symmetric_matrix_product(
           C(row_c,col_c),    // Initial value for accumulation
           std::plus <> (), 
           [=](auto col_a){
-            if (col_c > row_c){  
-              return B(row_c, col_a) * A(col_a, col_c); // we are acessing the upper tirangular part of the matrix
+            if (row_c < col_a){  
+              return A(col_a, row_c) * B(col_a, col_c); // we are acessing the upper tirangular part of the matrix
             }
             else{
-              return B(row_c, col_a) * A(col_c, col_a);   // we are acessing the lower tirangular part of the matrix
+              return A(row_c, col_a) * B(col_a, col_c);   // we are acessing the lower tirangular part of the matrix
             }
           } 
         );
@@ -2252,17 +2259,19 @@ void symmetric_matrix_product(
           C(row_c,col_c),    // Initial value for accumulation
           std::plus <> (), 
           [=](auto col_a){
-            if (row_c > col_c){  // this is lower_triangle so if col > row skip it
-            return B(row_c, col_a) * A(col_a, col_c);    // we are acessing the lower tirangular part of the matrix
+            if (row_c > col_a){  // this is lower_triangle so if col > row skip it
+            return A(col_a, row_c) * B(col_a, col_c);    // we are acessing the lower tirangular part of the matrix
             }
             else{
-            return B(row_c, col_a) * A(col_c, col_a);   // we are acessing the upper tirangular part of the matrix
+            return A(row_c, col_a) * B(col_a, col_c);   // we are acessing the upper tirangular part of the matrix
             }
           } 
         );
       });
     });
   }
+  */
+
 }
 
 template<class ExecutionPolicy,
@@ -2358,7 +2367,7 @@ void symmetric_matrix_product(
 {
   using size_type = ::std::common_type_t<IndexType_A, IndexType_B, IndexType_C>;
 
-  /*
+  
   if constexpr (std::is_same_v<Triangle, lower_triangle_t>) {
     for (size_type j = 0; j < C.extent(1); ++j) {
       for (size_type i = 0; i < C.extent(0); ++i) {
@@ -2381,9 +2390,9 @@ void symmetric_matrix_product(
       }
     }
   }
-  */
-
   
+
+  /*    put back
   size_type nrows_C = C.extent(0);
   size_type ncols_C = C.extent(1);
   size_type ncols_A = A.extent(1);
@@ -2403,11 +2412,11 @@ void symmetric_matrix_product(
           C(row_c,col_c),    // Initial value for accumulation
           std::plus <> (), 
           [=](auto col_a){
-            if (col_c > row_c){  
-            return B(row_c, col_a) * A(col_a, col_c); // we are acessing the upper tirangular part of the matrix
+            if (row_a < col_c){  
+            return B(row_c, row_a) * A(col_c, row_a); // we are acessing the upper tirangular part of the matrix
             }
             else{
-              return B(row_c, col_a) * A(col_c, col_a);   // we are acessing the lower tirangular part of the matrix
+              return B(row_c, row_a) * A(row_a, col_c);   // we are acessing the lower tirangular part of the matrix
             }
           } 
         );
@@ -2426,17 +2435,19 @@ void symmetric_matrix_product(
           C(row_c,col_c),    // Initial value for accumulation
           std::plus <> (), 
           [=](auto col_a){
-            if (row_c > col_c){  // this is lower_triangle so if col > row skip it
-            return B(row_c, col_a) * A(col_a, col_c);    // we are acessing the lower tirangular part of the matrix
+            if (row_a > col_c){  // this is lower_triangle so if col > row skip it
+            return B(row_c, row_a) * A(col_c, row_a);    // we are acessing the lower tirangular part of the matrix
             }
             else{
-            return B(row_c, col_a) * A(col_c, col_a);   // we are acessing the upper tirangular part of the matrix
+            return B(row_c, row_a) * A(row_a, col_c);   // we are acessing the upper tirangular part of the matrix
             }
           } 
-        );
+        ); 
       });
     });
   }
+  */
+
 }
 
 template<class ExecutionPolicy,
